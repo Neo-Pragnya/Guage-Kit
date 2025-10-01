@@ -1,0 +1,187 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAG Metrics Documentation &mdash; Guage-Kit  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Embeddings Metrics Guide" href="embeddings_metrics.html" />
+    <link rel="prev" title="LLM Metrics in Guage-Kit" href="llm_metrics.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Guage-Kit
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installing.html">Installing Guage-Kit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="llm_metrics.html">LLM Metrics in Guage-Kit</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">RAG Metrics Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#key-metrics">Key Metrics</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#faithfulness">1. Faithfulness</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#groundedness">2. Groundedness</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#answer-relevancy">3. Answer Relevancy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#retrieval-metrics">4. Retrieval Metrics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#conclusion">Conclusion</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="embeddings_metrics.html">Embeddings Metrics Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="choosing_metrics.html">Choosing Metrics for Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reproducibility.html">Reproducibility in Evaluations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/index.html">Guage-Kit API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Guage-Kit</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">RAG Metrics Documentation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/guides/rag_metrics.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="rag-metrics-documentation">
+<h1>RAG Metrics Documentation<a class="headerlink" href="#rag-metrics-documentation" title="Link to this heading"></a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>This document provides an overview of the metrics used to evaluate Retrieval-Augmented Generation (RAG) systems. RAG systems combine the strengths of retrieval-based and generation-based approaches to improve the quality and relevance of generated responses.</p>
+</section>
+<section id="key-metrics">
+<h2>Key Metrics<a class="headerlink" href="#key-metrics" title="Link to this heading"></a></h2>
+<section id="faithfulness">
+<h3>1. Faithfulness<a class="headerlink" href="#faithfulness" title="Link to this heading"></a></h3>
+<p>Faithfulness measures how accurately the generated response reflects the information present in the retrieved context. It assesses whether the generated content is supported by the retrieved documents.</p>
+<ul class="simple">
+<li><p><strong>Metric Calculation</strong>:</p>
+<ul>
+<li><p>Compare the generated response with the relevant context.</p></li>
+<li><p>Use human judges or automated methods (e.g., Natural Language Inference) to evaluate alignment.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="groundedness">
+<h3>2. Groundedness<a class="headerlink" href="#groundedness" title="Link to this heading"></a></h3>
+<p>Groundedness evaluates the extent to which the generated response is based on the retrieved context. A grounded response should directly reference or be supported by the retrieved documents.</p>
+<ul class="simple">
+<li><p><strong>Metric Calculation</strong>:</p>
+<ul>
+<li><p>Analyze the overlap between the generated response and the retrieved context.</p></li>
+<li><p>Use cosine similarity between embeddings of the response and context.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="answer-relevancy">
+<h3>3. Answer Relevancy<a class="headerlink" href="#answer-relevancy" title="Link to this heading"></a></h3>
+<p>Answer relevancy measures how relevant the generated response is to the original query. This metric ensures that the response addresses the user’s question effectively.</p>
+<ul class="simple">
+<li><p><strong>Metric Calculation</strong>:</p>
+<ul>
+<li><p>Calculate the cosine similarity between the query and the generated response embeddings.</p></li>
+<li><p>Higher similarity indicates better relevancy.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="retrieval-metrics">
+<h3>4. Retrieval Metrics<a class="headerlink" href="#retrieval-metrics" title="Link to this heading"></a></h3>
+<p>These metrics evaluate the performance of the retrieval component in the RAG system.</p>
+<ul class="simple">
+<li><p><strong>Recall&#64;k</strong>: Measures the proportion of relevant documents retrieved in the top-k results.</p></li>
+<li><p><strong>Precision&#64;k</strong>: Measures the proportion of retrieved documents that are relevant in the top-k results.</p></li>
+<li><p><strong>Mean Reciprocal Rank (MRR)</strong>: Averages the reciprocal ranks of the first relevant document across queries.</p></li>
+<li><p><strong>Mean Average Precision (MAP)</strong>: Averages the precision scores at each relevant document across queries.</p></li>
+<li><p><strong>Normalized Discounted Cumulative Gain (nDCG)</strong>: Evaluates the ranking quality of the retrieved documents based on their relevance.</p></li>
+</ul>
+</section>
+</section>
+<section id="conclusion">
+<h2>Conclusion<a class="headerlink" href="#conclusion" title="Link to this heading"></a></h2>
+<p>Evaluating RAG systems requires a combination of metrics that assess both the quality of the generated responses and the effectiveness of the retrieval process. By using these metrics, developers can gain insights into the performance of their RAG systems and make informed improvements.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="llm_metrics.html" class="btn btn-neutral float-left" title="LLM Metrics in Guage-Kit" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="embeddings_metrics.html" class="btn btn-neutral float-right" title="Embeddings Metrics Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Neo Pragnya.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

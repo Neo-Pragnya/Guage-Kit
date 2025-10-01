@@ -1,0 +1,181 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Choosing Metrics for Evaluation &mdash; Guage-Kit  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Guage-Kit
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Choosing Metrics for Evaluation</a><ul>
+<li><a class="reference internal" href="#understanding-the-types-of-metrics">1. Understanding the Types of Metrics</a><ul>
+<li><a class="reference internal" href="#llm-quality-metrics">LLM Quality Metrics</a></li>
+<li><a class="reference internal" href="#rag-quality-metrics">RAG Quality Metrics</a></li>
+<li><a class="reference internal" href="#embedding-metrics">Embedding Metrics</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#considerations-for-choosing-metrics">2. Considerations for Choosing Metrics</a><ul>
+<li><a class="reference internal" href="#evaluation-goals">Evaluation Goals</a></li>
+<li><a class="reference internal" href="#metric-characteristics">Metric Characteristics</a></li>
+<li><a class="reference internal" href="#context-of-use">Context of Use</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#recommended-metric-combinations">3. Recommended Metric Combinations</a></li>
+<li><a class="reference internal" href="#conclusion">4. Conclusion</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Guage-Kit</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Choosing Metrics for Evaluation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/guides/choosing_metrics.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="choosing-metrics-for-evaluation">
+<h1>Choosing Metrics for Evaluation<a class="headerlink" href="#choosing-metrics-for-evaluation" title="Link to this heading"></a></h1>
+<p>When evaluating LLMs, RAG systems, and embeddings, selecting the right metrics is crucial for obtaining meaningful insights. This guide provides an overview of the available metrics and considerations for choosing the most appropriate ones for your evaluation needs.</p>
+<section id="understanding-the-types-of-metrics">
+<h2>1. Understanding the Types of Metrics<a class="headerlink" href="#understanding-the-types-of-metrics" title="Link to this heading"></a></h2>
+<section id="llm-quality-metrics">
+<h3>LLM Quality Metrics<a class="headerlink" href="#llm-quality-metrics" title="Link to this heading"></a></h3>
+<p>These metrics assess the quality of language model outputs. Common metrics include:</p>
+<ul class="simple">
+<li><p><strong>ROUGE</strong>: Measures the overlap of n-grams between generated text and reference text.</p></li>
+<li><p><strong>BLEU</strong>: Evaluates the quality of text which has been machine-translated from one language to another.</p></li>
+<li><p><strong>METEOR</strong>: Considers synonyms and stemming, providing a more nuanced evaluation than BLEU.</p></li>
+</ul>
+</section>
+<section id="rag-quality-metrics">
+<h3>RAG Quality Metrics<a class="headerlink" href="#rag-quality-metrics" title="Link to this heading"></a></h3>
+<p>These metrics evaluate the performance of retrieval-augmented generation systems:</p>
+<ul class="simple">
+<li><p><strong>Faithfulness</strong>: Measures how accurately the generated output reflects the retrieved context.</p></li>
+<li><p><strong>Answer Relevancy</strong>: Assesses the relevance of the generated answer to the query.</p></li>
+</ul>
+</section>
+<section id="embedding-metrics">
+<h3>Embedding Metrics<a class="headerlink" href="#embedding-metrics" title="Link to this heading"></a></h3>
+<p>These metrics are used to evaluate the quality of embeddings:</p>
+<ul class="simple">
+<li><p><strong>STS Spearman</strong>: Measures the correlation between semantic textual similarity scores and human judgments.</p></li>
+<li><p><strong>Clustering Metrics</strong>: Evaluate the quality of clusters formed by embeddings, such as Adjusted Rand Index (ARI) and Normalized Mutual Information (NMI).</p></li>
+</ul>
+</section>
+</section>
+<section id="considerations-for-choosing-metrics">
+<h2>2. Considerations for Choosing Metrics<a class="headerlink" href="#considerations-for-choosing-metrics" title="Link to this heading"></a></h2>
+<section id="evaluation-goals">
+<h3>Evaluation Goals<a class="headerlink" href="#evaluation-goals" title="Link to this heading"></a></h3>
+<p>Define what you want to achieve with your evaluation. Are you interested in the quality of generated text, the relevance of retrieved information, or the effectiveness of embeddings? Your goals will guide your metric selection.</p>
+</section>
+<section id="metric-characteristics">
+<h3>Metric Characteristics<a class="headerlink" href="#metric-characteristics" title="Link to this heading"></a></h3>
+<p>Consider the characteristics of each metric:</p>
+<ul class="simple">
+<li><p><strong>Sensitivity</strong>: How well does the metric capture subtle differences in quality?</p></li>
+<li><p><strong>Interpretability</strong>: Is the metric easy to understand and explain to stakeholders?</p></li>
+<li><p><strong>Computational Efficiency</strong>: How resource-intensive is the metric to compute?</p></li>
+</ul>
+</section>
+<section id="context-of-use">
+<h3>Context of Use<a class="headerlink" href="#context-of-use" title="Link to this heading"></a></h3>
+<p>The context in which the model will be used can influence metric selection. For example, if the model is intended for a high-stakes application, metrics that assess safety and bias may be particularly important.</p>
+</section>
+</section>
+<section id="recommended-metric-combinations">
+<h2>3. Recommended Metric Combinations<a class="headerlink" href="#recommended-metric-combinations" title="Link to this heading"></a></h2>
+<p>For a comprehensive evaluation, consider using a combination of metrics from different categories. For example:</p>
+<ul class="simple">
+<li><p>Use LLM quality metrics (e.g., ROUGE, BLEU) alongside RAG quality metrics (e.g., Faithfulness, Answer Relevancy) to assess both the generation and retrieval aspects of your system.</p></li>
+<li><p>Incorporate embedding metrics (e.g., STS Spearman) to evaluate the quality of the embeddings used in your model.</p></li>
+</ul>
+</section>
+<section id="conclusion">
+<h2>4. Conclusion<a class="headerlink" href="#conclusion" title="Link to this heading"></a></h2>
+<p>Choosing the right metrics is essential for effective evaluation. By understanding the types of metrics available and considering your evaluation goals, you can select the most appropriate metrics to gain valuable insights into your models’ performance.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Neo Pragnya.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

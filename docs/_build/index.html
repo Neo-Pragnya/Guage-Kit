@@ -1,0 +1,208 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guage-Kit &mdash; Guage-Kit  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installing Guage-Kit" href="guides/installing.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            Guage-Kit
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="guides/installing.html">Installing Guage-Kit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guides/llm_metrics.html">LLM Metrics in Guage-Kit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guides/rag_metrics.html">RAG Metrics Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guides/embeddings_metrics.html">Embeddings Metrics Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guides/choosing_metrics.html">Choosing Metrics for Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guides/reproducibility.html">Reproducibility in Evaluations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">Guage-Kit API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">Guage-Kit</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Guage-Kit</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="guage-kit">
+<h1>Guage-Kit<a class="headerlink" href="#guage-kit" title="Link to this heading"></a></h1>
+<p>A unified, extensible toolkit for evaluating LLMs, RAG systems, and embeddings.</p>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>guage-kit
+</pre></div>
+</div>
+<p>Or with UV:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>add<span class="w"> </span>guage-kit
+</pre></div>
+</div>
+</section>
+<section id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">guage_kit</span><span class="w"> </span><span class="kn">import</span> <span class="n">evaluate</span>
+
+<span class="c1"># Basic evaluation</span>
+<span class="n">scores</span> <span class="o">=</span> <span class="n">evaluate</span><span class="p">(</span>
+    <span class="n">data</span><span class="o">=</span><span class="s2">&quot;path/to/your/data.jsonl&quot;</span><span class="p">,</span>
+    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;rougeL&quot;</span><span class="p">,</span> <span class="s2">&quot;bleu&quot;</span><span class="p">,</span> <span class="s2">&quot;answer_relevancy&quot;</span><span class="p">]</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="features">
+<h2>Features<a class="headerlink" href="#features" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Comprehensive Metrics</strong>: LLM quality, RAG evaluation, retrieval metrics, embedding analysis</p></li>
+<li><p><strong>Multiple Interfaces</strong>: Python API, CLI, and Streamlit UI</p></li>
+<li><p><strong>Extensible</strong>: Plugin system for custom metrics</p></li>
+<li><p><strong>Production Ready</strong>: CI/CD integration, comprehensive reporting</p></li>
+</ul>
+</section>
+<section id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="guides/installing.html">Installing Guage-Kit</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guides/installing.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/installing.html#installation-steps">Installation Steps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/installing.html#additional-setup">Additional Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/installing.html#conclusion">Conclusion</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guides/llm_metrics.html">LLM Metrics in Guage-Kit</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guides/llm_metrics.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/llm_metrics.html#metrics">Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/llm_metrics.html#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/llm_metrics.html#conclusion">Conclusion</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guides/rag_metrics.html">RAG Metrics Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guides/rag_metrics.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/rag_metrics.html#key-metrics">Key Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/rag_metrics.html#conclusion">Conclusion</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guides/embeddings_metrics.html">Embeddings Metrics Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guides/embeddings_metrics.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/embeddings_metrics.html#intrinsic-metrics">Intrinsic Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/embeddings_metrics.html#extrinsic-metrics">Extrinsic Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/embeddings_metrics.html#drift-metrics">Drift Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/embeddings_metrics.html#conclusion">Conclusion</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guides/choosing_metrics.html">Choosing Metrics for Evaluation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guides/choosing_metrics.html#understanding-the-types-of-metrics">1. Understanding the Types of Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/choosing_metrics.html#considerations-for-choosing-metrics">2. Considerations for Choosing Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/choosing_metrics.html#recommended-metric-combinations">3. Recommended Metric Combinations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/choosing_metrics.html#conclusion">4. Conclusion</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guides/reproducibility.html">Reproducibility in Evaluations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guides/reproducibility.html#key-principles">Key Principles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/reproducibility.html#configuration-example">Configuration Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/reproducibility.html#running-evaluations">Running Evaluations</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">Guage-Kit API</a></li>
+</ul>
+</div>
+<p><strong>Docstring style</strong>: NumPy/Google; <code class="docutils literal notranslate"><span class="pre">napoleon</span></code> enabled. Ensure <strong>all public functions</strong> have comprehensive docstrings (parameters, returns, notes, examples).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="guides/installing.html" class="btn btn-neutral float-right" title="Installing Guage-Kit" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Neo Pragnya.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

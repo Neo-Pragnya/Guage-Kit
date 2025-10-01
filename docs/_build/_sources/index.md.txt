@@ -1,0 +1,59 @@
+# Guage-Kit
+
+A unified, extensible toolkit for evaluating LLMs, RAG systems, and embeddings.
+
+## Installation
+
+```bash
+pip install guage-kit
+```
+
+Or with UV:
+
+```bash
+uv add guage-kit
+```
+
+## Quick Start
+
+```python
+from guage_kit import evaluate
+
+# Basic evaluation
+scores = evaluate(
+    data="path/to/your/data.jsonl",
+    metrics=["rougeL", "bleu", "answer_relevancy"]
+)
+print(scores)
+```
+
+## Features
+
+- **Comprehensive Metrics**: LLM quality, RAG evaluation, retrieval metrics, embedding analysis
+- **Multiple Interfaces**: Python API, CLI, and Streamlit UI
+- **Extensible**: Plugin system for custom metrics
+- **Production Ready**: CI/CD integration, comprehensive reporting
+
+## Contents
+
+```{toctree}
+:maxdepth: 2
+:caption: User Guide
+
+guides/installing
+guides/llm_metrics
+guides/rag_metrics
+guides/embeddings_metrics
+guides/choosing_metrics
+guides/reproducibility
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: API Reference
+
+api/index
+```
+
+**Docstring style**: NumPy/Google; `napoleon` enabled. Ensure **all public functions** have comprehensive docstrings (parameters, returns, notes, examples).
+```

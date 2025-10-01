@@ -1,0 +1,11 @@
+# Guage-Kit — CODEOWNERS
+
+* @neo-pragnya
+* @your-github-username
+* @another-contributor-username
+
+# Specify the owners for specific paths
+/src/guage_kit/ @neo-pragnya
+/apps/guage_kit_ui/ @your-github-username
+/docs/ @another-contributor-username
+/tests/ @neo-pragnya, @your-github-username

@@ -1,0 +1,1 @@
+{"query":{"id":"q1","prompt":"What is CRISPR?","references":["A genome editing tool"]},"retrieval":{"query_id":"q1","chunks":[{"id":"c1","text":"CRISPR is a genome editing tool...", "source":"wiki"}]},"generation":{"query_id":"q1","text":"CRISPR is a genome editing technology.", "model":"my-llm"}}

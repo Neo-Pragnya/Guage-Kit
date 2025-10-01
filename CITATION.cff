@@ -1,0 +1,11 @@
+title: Guage-Kit
+version: 0.1.0
+doi: https://doi.org/10.1234/guage-kit
+authors:
+  - name: Neo Pragnya
+    affiliation: Open Source Contributor
+    email: opensource@neo-pragnya.org
+description: A unified, extensible toolkit for evaluating LLMs, RAG systems, and embeddings.
+license: Apache-2.0
+url: https://github.com/yourusername/Guage-Kit
+citation: Please cite this project as "Guage-Kit: A unified, extensible toolkit for evaluating LLMs, RAG systems, and embeddings" by Neo Pragnya.

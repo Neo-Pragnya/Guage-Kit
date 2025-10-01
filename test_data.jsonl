@@ -1,0 +1,3 @@
+{"id": "q1", "prompt": "What is the capital of France?", "prediction": "The capital of France is Paris.", "reference": "Paris"}
+{"id": "q2", "prompt": "Who wrote Romeo and Juliet?", "prediction": "William Shakespeare wrote Romeo and Juliet.", "reference": "William Shakespeare"}
+{"id": "q3", "prompt": "What is 2 + 2?", "prediction": "2 + 2 equals 4.", "reference": "4"}

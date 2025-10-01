@@ -1,0 +1,176 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metrics Reference &mdash; Guage-Kit  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Guage-Kit
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../guides/installing.html">Installing Guage-Kit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guides/llm_metrics.html">LLM Metrics in Guage-Kit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guides/rag_metrics.html">RAG Metrics Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guides/embeddings_metrics.html">Embeddings Metrics Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guides/choosing_metrics.html">Choosing Metrics for Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guides/reproducibility.html">Reproducibility in Evaluations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/index.html">Guage-Kit API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Guage-Kit</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Metrics Reference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/references/metrics.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="metrics-reference">
+<h1>Metrics Reference<a class="headerlink" href="#metrics-reference" title="Link to this heading"></a></h1>
+<p>This document provides an overview of the metrics available in the Guage-Kit project for evaluating LLMs, RAG systems, and embeddings.</p>
+<section id="llm-quality-metrics">
+<h2>LLM Quality Metrics<a class="headerlink" href="#llm-quality-metrics" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>ROUGE-L</strong>: Measures the overlap of n-grams between the generated text and reference text.</p></li>
+<li><p><strong>BLEU</strong>: A metric for evaluating the quality of text which has been machine-translated from one language to another.</p></li>
+<li><p><strong>METEOR</strong>: A metric that evaluates machine translation by aligning generated text with reference text based on exact, stem, synonym, and paraphrase matches.</p></li>
+</ul>
+</section>
+<section id="rag-quality-metrics">
+<h2>RAG Quality Metrics<a class="headerlink" href="#rag-quality-metrics" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Faithfulness</strong>: Evaluates the alignment between the generated answer and the context provided.</p></li>
+<li><p><strong>Answer Relevancy</strong>: Measures the cosine similarity between the question and the generated answer embeddings.</p></li>
+</ul>
+</section>
+<section id="information-retrieval-metrics">
+<h2>Information Retrieval Metrics<a class="headerlink" href="#information-retrieval-metrics" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Recall&#64;k</strong>: Measures the proportion of relevant items retrieved in the top-k results.</p></li>
+<li><p><strong>Precision&#64;k</strong>: Measures the proportion of retrieved items that are relevant in the top-k results.</p></li>
+<li><p><strong>Mean Reciprocal Rank (MRR)</strong>: The average of the reciprocal ranks of the first relevant item for a set of queries.</p></li>
+<li><p><strong>Mean Average Precision (MAP)</strong>: The mean of the average precision scores for each query.</p></li>
+</ul>
+</section>
+<section id="embeddings-metrics">
+<h2>Embeddings Metrics<a class="headerlink" href="#embeddings-metrics" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>STS Spearman</strong>: Measures the correlation between the semantic textual similarity scores of embeddings.</p></li>
+<li><p><strong>Clustering ARI/NMI</strong>: Adjusted Rand Index and Normalized Mutual Information for evaluating clustering quality.</p></li>
+<li><p><strong>k-NN Accuracy</strong>: Evaluates the accuracy of k-nearest neighbors classification.</p></li>
+</ul>
+</section>
+<section id="hallucination-metrics">
+<h2>Hallucination Metrics<a class="headerlink" href="#hallucination-metrics" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Unsupported Claim Rate</strong>: Measures the rate of unsupported claims in generated text.</p></li>
+<li><p><strong>Hallucination Rate</strong>: Evaluates the frequency of hallucinations in generated responses.</p></li>
+</ul>
+</section>
+<section id="safety-and-bias-metrics">
+<h2>Safety and Bias Metrics<a class="headerlink" href="#safety-and-bias-metrics" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Toxicity</strong>: Measures the level of toxicity in generated text.</p></li>
+<li><p><strong>Bias</strong>: Evaluates the presence of bias in the generated responses.</p></li>
+</ul>
+</section>
+<section id="calibration-metrics">
+<h2>Calibration Metrics<a class="headerlink" href="#calibration-metrics" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Expected Calibration Error (ECE)</strong>: Measures the difference between predicted probabilities and actual outcomes.</p></li>
+<li><p><strong>Brier Score</strong>: A measure of how close the predicted probabilities are to the actual outcomes.</p></li>
+<li><p><strong>Log Loss</strong>: Evaluates the performance of a classification model where the prediction input is a probability value between 0 and 1.</p></li>
+</ul>
+</section>
+<section id="runtime-cost-metrics">
+<h2>Runtime Cost Metrics<a class="headerlink" href="#runtime-cost-metrics" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Tokens</strong>: Counts the number of tokens processed during evaluation.</p></li>
+<li><p><strong>Latency</strong>: Measures the time taken to generate responses.</p></li>
+<li><p><strong>Cost</strong>: Evaluates the monetary cost associated with running the evaluation, based on the provider used.</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Neo Pragnya.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
