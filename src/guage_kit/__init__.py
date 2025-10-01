@@ -7,6 +7,10 @@ __author__ = "Neo Pragnya"
 __email__ = "opensource@neo-pragnya.org"
 __license__ = "Apache-2.0"
 
-from .api import evaluate
-
-__all__ = ["evaluate", "__version__"]
+# Import only essential components to avoid dependency issues
+try:
+    from .api import evaluate
+    __all__ = ["evaluate", "__version__"]
+except ImportError:
+    # If dependencies are missing, provide version only
+    __all__ = ["__version__"]

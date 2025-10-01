@@ -4,22 +4,68 @@ from rouge_score import rouge_scorer
 from nltk.translate.meteor_score import meteor_score
 import numpy as np
 
+from typing import List
+try:
+    from sacrebleu import corpus_bleu, sentence_bleu
+    HAS_SACREBLEU = True
+except ImportError:
+    HAS_SACREBLEU = False
+
+try:
+    from rouge_score import rouge_scorer
+    HAS_ROUGE_SCORE = True
+except ImportError:
+    HAS_ROUGE_SCORE = False
+
+
+from typing import List
+
+try:
+    from sacrebleu import corpus_bleu, sentence_bleu
+    HAS_SACREBLEU = True
+except ImportError:
+    HAS_SACREBLEU = False
+
+try:
+    from rouge_score import rouge_scorer
+    HAS_ROUGE_SCORE = True
+except ImportError:
+    HAS_ROUGE_SCORE = False
+
+
 def compute_rouge(predictions: List[str], references: List[List[str]]) -> dict:
+    """Compute ROUGE scores (ROUGE-1, ROUGE-2, ROUGE-L)."""
+    if not HAS_ROUGE_SCORE:
+        raise ImportError("rouge-score is required for ROUGE metrics. Install with: pip install rouge-score")
+    
     scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
     scores = {key: 0 for key in ['rouge1', 'rouge2', 'rougeL']}
-    
+
     for pred, refs in zip(predictions, references):
         score = scorer.score(pred, refs[0])  # Assuming single reference for simplicity
         for key in scores:
             scores[key] += score[key].fmeasure
-            
+
     # Average scores
-    for key in scores:
-        scores[key] /= len(predictions)
-    
+    if len(predictions) > 0:
+        for key in scores:
+            scores[key] /= len(predictions)
+
     return scores
 
+
 def compute_bleu(predictions: List[str], references: List[List[str]]) -> float:
+    """Compute corpus-level BLEU score."""
+    if not HAS_SACREBLEU:
+        raise ImportError("sacrebleu is required for BLEU metrics. Install with: pip install sacrebleu")
+    
+    # Convert to format expected by sacrebleu
+    refs_by_sentence = []
+    for i in range(len(references[0]) if references else 0):
+        refs_by_sentence.append([ref[i] for ref in references])
+    
+    bleu = corpus_bleu(predictions, refs_by_sentence)
+    return bleu.score / 100.0  # Convert to 0-1 scaledef compute_bleu(predictions: List[str], references: List[List[str]]) -> float:
     return corpus_bleu(predictions, references).score
 
 def compute_meteor(predictions: List[str], references: List[List[str]]) -> float:
