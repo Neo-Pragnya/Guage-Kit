@@ -9,10 +9,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 def test_imports():
     """Test that core modules can be imported."""
-    from guage_kit.schemas.core import Query, Generation, EvalSample
-    from guage_kit.api import evaluate
-    
-    # Test basic schema creation
+import guage_kit
+from guage_kit.schemas.core import EvalSample, Query, Generation    # Test basic schema creation
     query = Query(id="test", prompt="Hello")
     generation = Generation(query_id="test", text="Hi there")
     sample = EvalSample(query=query, generation=generation)

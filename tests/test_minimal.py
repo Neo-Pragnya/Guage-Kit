@@ -30,9 +30,13 @@ def test_package_version():
 
 
 def test_cli_module_exists():
-    """Test that CLI module exists."""
-    import importlib.util
-    import os
-    
-    cli_path = os.path.join(os.path.dirname(__file__), '..', 'src', 'guage_kit', 'cli.py')
-    assert os.path.exists(cli_path), "CLI module file should exist"
+    """Test that CLI module can be imported."""
+    from guage_kit import cli
+    assert hasattr(cli, 'main')
+
+
+def test_package_version():
+    """Test that package version is accessible."""
+    import guage_kit
+    assert hasattr(guage_kit, '__version__')
+    assert guage_kit.__version__ == "0.1.0"

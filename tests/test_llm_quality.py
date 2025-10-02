@@ -1,5 +1,5 @@
 import pytest
-from guage_kit.metrics.llm_quality import calculate_rouge, calculate_bleu, calculate_meteor
+from guage_kit.metrics.llm_quality import compute_rouge, calculate_bleu, calculate_meteor
 
 def test_calculate_rouge():
     reference = "The cat sat on the mat."

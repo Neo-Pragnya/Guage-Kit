@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Dict
 from pydantic import BaseModel
 
 class CalibrationMetric(BaseModel):

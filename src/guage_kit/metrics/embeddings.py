@@ -61,7 +61,7 @@ def compute_sts_spearman(eval_samples: List[EvalSample]) -> float:
     try:
         correlation, _ = spearmanr(query_features, generation_features, axis=0)
         return float(np.mean(correlation) if hasattr(correlation, '__iter__') else correlation)
-    except:
+    except (ValueError, TypeError, AttributeError):
         return 0.0
 
 

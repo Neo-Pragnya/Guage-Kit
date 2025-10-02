@@ -12,7 +12,7 @@ def faithfulness(reference: str, generated: str) -> float:
         tfidf_matrix = vectorizer.fit_transform([reference, generated])
         similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
         return float(similarity)
-    except:
+    except (ValueError, TypeError, AttributeError):
         return 0.0
 
 def answer_relevancy(query: str, answer: str) -> float:
@@ -23,7 +23,7 @@ def answer_relevancy(query: str, answer: str) -> float:
         tfidf_matrix = vectorizer.fit_transform([query, answer])
         similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
         return float(similarity)
-    except:
+    except (ValueError, TypeError, AttributeError):
         return 0.0
 
 

@@ -134,7 +134,7 @@ def main():
         if not args.dry_run:
             print(f"\n🎉 Release {args.version} prepared successfully!")
             print("📋 Next steps:")
-            print(f"   1. git push origin main")
+            print("   1. git push origin main")
             print(f"   2. git push origin v{args.version}")
             print("   3. Monitor GitHub Actions for PyPI release")
         else:

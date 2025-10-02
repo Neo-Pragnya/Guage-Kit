@@ -1,6 +1,5 @@
 from argparse import ArgumentParser
 import json
-import pathlib
 from .api import evaluate
 
 def main():

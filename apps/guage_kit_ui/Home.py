@@ -60,7 +60,9 @@ def main():
         
         # Try importing key dependencies
         try:
-            import numpy, pandas, sklearn
+            import numpy
+            import pandas
+            import sklearn
             st.success("✅ Core dependencies (numpy, pandas, sklearn) available")
         except ImportError as e:
             st.error(f"❌ Missing core dependencies: {e}")
