@@ -13,7 +13,7 @@ import json
 import inspect
 import re
 import sys
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Any
 
 import typer.main
@@ -229,6 +229,8 @@ def md_doc(text: str) -> str:
 
 
 def _default(v: Any) -> str:
+    if isinstance(v, PurePath):  # the same on every OS (repr says PosixPath or WindowsPath)
+        return f"Path({v.as_posix()!r})"
     if callable(v):
         return getattr(v, "__name__", type(v).__name__)
     r = repr(v)
@@ -267,9 +269,31 @@ def signature(obj: Any, name: str) -> str:
     return f"{name}(\n" + "".join(f"    {p},\n" for p in parts) + f"){ret}"
 
 
+def _unions(s: str) -> str:
+    """Rewrite ``Union[A, B]`` as ``A | B`` (older Pythons print some unions the long way)."""
+    while (i := s.find("Union[")) != -1:
+        depth, j, parts, start = 0, i + 6, [], i + 6
+        while j < len(s):
+            ch = s[j]
+            if ch == "[":
+                depth += 1
+            elif ch == "]":
+                if depth == 0:
+                    break
+                depth -= 1
+            elif ch == "," and depth == 0:
+                parts.append(s[start:j].strip())
+                start = j + 1
+            j += 1
+        parts.append(s[start:j].strip())
+        s = s[:i] + " | ".join(parts) + s[j + 1 :]
+    return s
+
+
 def _ann(a: Any) -> str:
-    s = a if isinstance(a, str) else getattr(a, "__name__", None) or repr(a)
-    s = str(s).replace("typing.", "").replace("collections.abc.", "")
+    # formatannotation renders unions as "X | None" on every Python version (3.14 renamed the union type)
+    s = a if isinstance(a, str) else inspect.formatannotation(a)
+    s = _unions(str(s).replace("typing.", "").replace("collections.abc.", ""))
     return re.sub(r"\b(?:guage_kit|ananke)\.[\w.]+\.(\w+)", r"\1", s)
 
 
@@ -316,8 +340,10 @@ def render_object(name: str, obj: Any, level: str = "###") -> list[str]:
         lines += ["```python", ("class " if kind == "class" else "") + sig, "```", ""]
         if link:
             lines += [link, ""]
-    doc = inspect.getdoc(obj)
-    if doc and not (kind == "class" and doc == inspect.getdoc(BaseModel)):
+    # a class's own docstring only: inherited ones (typing.Protocol, BaseModel) differ between Python versions
+    own = obj.__dict__.get("__doc__") if kind == "class" else obj.__doc__
+    doc = inspect.cleandoc(own) if own else None
+    if doc:
         lines += [md_doc(doc), ""]
     if kind == "class" and issubclass(obj, BaseModel):
         lines += model_fields(obj) + [""]

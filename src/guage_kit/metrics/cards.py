@@ -24,6 +24,8 @@ Card fields (all text is Markdown):
 from __future__ import annotations
 
 from functools import lru_cache
+
+# nosemgrep: python.lang.compatibility.python37.python37-compatibility-importlib2
 from importlib import resources
 from typing import Any
 

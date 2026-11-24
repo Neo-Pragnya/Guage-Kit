@@ -26,6 +26,10 @@ _F = "semantic"
 
 @runtime_checkable
 class Embedder(Protocol):
+    """What semantic metrics need from an embedding model: a ``name`` and ``embed(texts)`` returning one vector per
+    text. ``HashingEmbedder`` (offline, built in) and ``SentenceTransformerEmbedder`` implement it; any object with
+    these two members works."""
+
     name: str
 
     def embed(self, texts: list[str]) -> list[list[float]]: ...

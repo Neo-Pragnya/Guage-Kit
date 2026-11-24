@@ -31,22 +31,22 @@ One evaluation sample. Unknown fields in files are kept in `metadata` by the dat
 | `input` | `Any` | `''` |
 | `output` | `Any` | `None` |
 | `expected` | `Any` | `None` |
-| `references` | `list` | `[]` |
-| `contexts` | `list` | `[]` |
-| `retrieved_ids` | `list` | `[]` |
-| `relevant_ids` | `list` | `[]` |
-| `relevance` | `dict` | `{}` |
+| `references` | `list[str]` | `[]` |
+| `contexts` | `list[str]` | `[]` |
+| `retrieved_ids` | `list[str]` | `[]` |
+| `relevant_ids` | `list[str]` | `[]` |
+| `relevance` | `dict[str, float]` | `{}` |
 | `label` | `str \| None` | `None` |
-| `probabilities` | `dict` | `{}` |
+| `probabilities` | `dict[str, float]` | `{}` |
 | `confidence` | `float \| None` | `None` |
-| `embeddings` | `dict` | `{}` |
-| `tool_calls` | `list` | `[]` |
-| `expected_tool_calls` | `list` | `[]` |
+| `embeddings` | `dict[str, list[float]]` | `{}` |
+| `tool_calls` | `list[ToolCall]` | `[]` |
+| `expected_tool_calls` | `list[ToolCall]` | `[]` |
 | `trace` | `dict[str, Any] \| None` | `None` |
 | `latency_ms` | `float \| None` | `None` |
 | `usage` | `Usage \| None` | `None` |
-| `tags` | `list` | `[]` |
-| `metadata` | `dict` | `{}` |
+| `tags` | `list[str]` | `[]` |
+| `metadata` | `dict[str, Any]` | `{}` |
 
 - **`Sample.expected_texts`** *(property)*: Every acceptable reference answer: `expected` (when text) followed by `references`.
 - **`Sample.has(field: str) -> bool`**  
@@ -61,7 +61,7 @@ A tool (function) call an agent made, or one it was expected to make.
 | field | type | default |
 | --- | --- | --- |
 | `name` | `str` | required |
-| `arguments` | `dict` | `{}` |
+| `arguments` | `dict[str, Any]` | `{}` |
 | `output` | `Any` | `None` |
 | `error` | `str \| None` | `None` |
 
@@ -154,7 +154,7 @@ every run so results can be reproduced and compared fairly).
 | `ananke_plexus` | `str \| None` | `None` |
 | `python` | `str` | `''` |
 | `platform` | `str` | `''` |
-| `git` | `dict` | `{}` |
+| `git` | `dict[str, Any]` | `{}` |
 
 
 ### `GateCheck`
@@ -182,9 +182,9 @@ with every check and the evidence files written for it.
 
 | field | type | default |
 | --- | --- | --- |
-| `verdict` | `Literal` | required |
-| `checks` | `list` | `[]` |
-| `evidence` | `list` | `[]` |
+| `verdict` | `Literal['PASS', 'WARN', 'REVIEW', 'BLOCK']` | required |
+| `checks` | `list[GateCheck]` | `[]` |
+| `evidence` | `list[str]` | `[]` |
 | `decided_by` | `str` | `'ananke.plexus.evals.policy.apply_gate_policy'` |
 
 
@@ -199,7 +199,7 @@ A quality bar for one metric.
 | `metric` | `str` | required |
 | `min` | `float \| None` | `None` |
 | `max` | `float \| None` | `None` |
-| `on_fail` | `Literal` | `'block'` |
+| `on_fail` | `Literal['block', 'warn', 'review']` | `'block'` |
 | `max_drop` | `float \| None` | `None` |
 
 
@@ -215,7 +215,7 @@ Aggregate of one metric over a run (or a slice of it).
 | `family` | `str` | `''` |
 | `description` | `str` | `''` |
 | `higher_is_better` | `bool` | `True` |
-| `level` | `Literal` | `'sample'` |
+| `level` | `Literal['sample', 'corpus']` | `'sample'` |
 | `n` | `int` | `0` |
 | `skipped` | `int` | `0` |
 | `errors` | `int` | `0` |
@@ -229,9 +229,9 @@ Aggregate of one metric over a run (or a slice of it).
 | `ci_high` | `float \| None` | `None` |
 | `threshold` | `float \| None` | `None` |
 | `pass_rate` | `float \| None` | `None` |
-| `histogram` | `list` | `[]` |
+| `histogram` | `list[int]` | `[]` |
 | `histogram_range` | `tuple[float, float] \| None` | `None` |
-| `details` | `dict` | `{}` |
+| `details` | `dict[str, Any]` | `{}` |
 
 
 ### `RunResult`
@@ -247,17 +247,17 @@ A complete, self-describing evaluation run. Saved as `run.json` and rendered int
 | `name` | `str` | `''` |
 | `created_at` | `str` | `''` |
 | `duration_s` | `float` | `0.0` |
-| `dataset` | `dict` | `{}` |
-| `target` | `dict` | `{}` |
-| `metrics` | `list` | `[]` |
-| `config` | `dict` | `{}` |
-| `samples` | `list` | `[]` |
-| `summaries` | `dict` | `{}` |
-| `slices` | `dict` | `{}` |
+| `dataset` | `dict[str, Any]` | `{}` |
+| `target` | `dict[str, Any]` | `{}` |
+| `metrics` | `list[str]` | `[]` |
+| `config` | `dict[str, Any]` | `{}` |
+| `samples` | `list[SampleResult]` | `[]` |
+| `summaries` | `dict[str, MetricSummary]` | `{}` |
+| `slices` | `dict[str, dict[str, MetricSummary]]` | `{}` |
 | `gate` | `GateResult \| None` | `None` |
-| `judge` | `dict` | `{}` |
+| `judge` | `dict[str, Any]` | `{}` |
 | `environment` | `Environment \| None` | `None` |
-| `notes` | `list` | `[]` |
+| `notes` | `list[str]` | `[]` |
 
 - **`RunResult.value(metric: str) -> float | None`**
 - **`RunResult.scores(metric: str) -> list[float]`**  
@@ -280,11 +280,11 @@ One sample's outcome in a run: its input, output and expected value as evaluated
 | `input` | `Any` | `None` |
 | `output` | `Any` | `None` |
 | `expected` | `Any` | `None` |
-| `tags` | `list` | `[]` |
-| `scores` | `dict` | `{}` |
+| `tags` | `list[str]` | `[]` |
+| `scores` | `dict[str, Score]` | `{}` |
 | `target_error` | `str \| None` | `None` |
 | `latency_ms` | `float \| None` | `None` |
-| `repeats` | `list` | `[]` |
+| `repeats` | `list[Any]` | `[]` |
 
 
 ### `Score`
@@ -301,7 +301,7 @@ One metric's result for one sample.
 | `skipped` | `bool` | `False` |
 | `error` | `str \| None` | `None` |
 | `reason` | `str \| None` | `None` |
-| `details` | `dict` | `{}` |
+| `details` | `dict[str, Any]` | `{}` |
 
 
 ### `Verdict`

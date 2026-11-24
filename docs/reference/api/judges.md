@@ -210,7 +210,7 @@ scale, and whether the judge sees the reference answer or the retrieved contexts
 | --- | --- | --- |
 | `name` | `str` | required |
 | `question` | `str` | required |
-| `levels` | `dict` | `{}` |
+| `levels` | `dict[int, str]` | `{}` |
 | `uses_reference` | `bool` | `False` |
 | `uses_contexts` | `bool` | `False` |
 | `scale` | `int` | `5` |

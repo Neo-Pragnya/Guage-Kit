@@ -122,13 +122,13 @@ improvements, whether both runs used the same data, and an optional pairwise jud
 | field | type | default |
 | --- | --- | --- |
 | `schema` | `str` | `'guage-kit/comparison@1'` |
-| `run_a` | `dict` | required |
-| `run_b` | `dict` | required |
+| `run_a` | `dict[str, Any]` | required |
+| `run_b` | `dict[str, Any]` | required |
 | `same_data` | `bool` | required |
 | `common_samples` | `int` | required |
-| `metrics` | `dict` | `{}` |
-| `regressions` | `list` | `[]` |
-| `improvements` | `list` | `[]` |
+| `metrics` | `dict[str, MetricDelta]` | `{}` |
+| `regressions` | `list[SampleDelta]` | `[]` |
+| `improvements` | `list[SampleDelta]` | `[]` |
 | `pairwise` | `dict[str, Any] \| None` | `None` |
 | `alpha` | `float` | `0.05` |
 | `min_effect` | `float` | `0.0` |
@@ -159,7 +159,7 @@ inconclusive, or changed for corpus metrics).
 | `losses` | `int` | `0` |
 | `ties` | `int` | `0` |
 | `n` | `int` | `0` |
-| `direction` | `Literal` | `'inconclusive'` |
+| `direction` | `Literal['improved', 'regressed', 'unchanged', 'inconclusive', 'changed']` | `'inconclusive'` |
 
 
 ### `SampleDelta`

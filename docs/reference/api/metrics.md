@@ -293,7 +293,7 @@ REQUIRED_FIELDS = ('summary', 'measures', 'method', 'inputs', 'interpret', 'pitf
 get_card(name: str) -> dict[str, Any] | None
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/cards.py#L97)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/cards.py#L98)
 
 The card for one metric (native or Ananke evaluator), or None (plugin metrics have none).
 
@@ -327,36 +327,9 @@ class Embedder(*args, **kwargs)
 
 [source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/semantic.py#L27)
 
-Base class for protocol classes.
-
-Protocol classes are defined as::
-
-    class Proto(Protocol):
-        def meth(self) -> int:
-            ...
-
-Such classes are primarily used with static type checkers that recognize
-structural subtyping (static duck-typing).
-
-For example::
-
-    class C:
-        def meth(self) -> int:
-            return 0
-
-    def func(x: Proto) -> int:
-        return x.meth()
-
-    func(C())  # Passes static type check
-
-See PEP 544 for details. Protocol classes decorated with
-@typing.runtime_checkable act as simple-minded runtime protocols that check
-only the presence of given attributes, ignoring their type signatures.
-Protocol classes can be generic, they are defined as::
-
-    class GenProto[T](Protocol):
-        def meth(self) -> T:
-            ...
+What semantic metrics need from an embedding model: a `name` and `embed(texts)` returning one vector per
+text. `HashingEmbedder` (offline, built in) and `SentenceTransformerEmbedder` implement it; any object with
+these two members works.
 
 - **`Embedder.embed(texts: list[str]) -> list[list[float]]`**
 
@@ -366,7 +339,7 @@ Protocol classes can be generic, they are defined as::
 class HashingEmbedder(dim: int = 1024) -> None
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/semantic.py#L41)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/semantic.py#L45)
 
 Offline embedder: hashed character 3–5-grams and words, sublinear tf, L2-normalised.
 
@@ -381,7 +354,7 @@ class SentenceTransformerEmbedder(
 ) -> None
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/semantic.py#L70)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/semantic.py#L74)
 
 Embeddings from a sentence-transformers model (Apache-2.0). Models download on first use.
 
@@ -394,6 +367,6 @@ Embeddings from a sentence-transformers model (Apache-2.0). Models download on f
 make_embedder(spec: str | None) -> Embedder | None
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/semantic.py#L95)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/semantic.py#L99)
 
 `"hashing"` → `HashingEmbedder`; any other string → a sentence-transformers model name.

@@ -94,7 +94,7 @@ Evaluate three demo systems offline and write their reports (no model, no networ
 
 | name | kind | default | description |
 | --- | --- | --- | --- |
-| `-o`, `--output` | option | `PosixPath('guage-demo')` | – |
+| `-o`, `--output` | option | `Path('guage-demo')` | – |
 | `--profile` | option | `'private'` | – |
 
 ## `guage doctor`
@@ -111,7 +111,7 @@ Write a starter guage.yaml and data/sample.jsonl (never overwrites).
 
 | name | kind | default | description |
 | --- | --- | --- | --- |
-| `DIRECTORY` | argument, optional | `PosixPath('.')` | Where to write guage.yaml and a sample dataset. |
+| `DIRECTORY` | argument, optional | `Path('.')` | Where to write guage.yaml and a sample dataset. |
 | `--name` | option | `'my-evaluation'` | – |
 
 ## `guage judge calibrate`
@@ -161,7 +161,7 @@ Write a red-team dataset (prompt injection, extraction, PII, over-refusal). Run 
 
 | name | kind | default | description |
 | --- | --- | --- | --- |
-| `-o` | option | `PosixPath('redteam.jsonl')` | – |
+| `-o` | option | `Path('redteam.jsonl')` | – |
 | `--system-prompt` | option | – | A file with your system prompt, to test leakage. |
 
 ## `guage probe robustness`
@@ -183,7 +183,7 @@ Render the HTML report of a saved run.
 | name | kind | default | description |
 | --- | --- | --- | --- |
 | `RUN_REF` | argument, optional | `'latest'` | Run id, path, latest or baseline:<name>. |
-| `-o`, `--output` | option | `PosixPath('guage-report.html')` | – |
+| `-o`, `--output` | option | `Path('guage-report.html')` | – |
 | `--profile` | option | `'private'` | – |
 | `--against` | option | – | Include a comparison with this run. |
 
@@ -228,7 +228,7 @@ Generate a test set from your own documents.
 | name | kind | default | description |
 | --- | --- | --- | --- |
 | `PATHS` | argument, required | – | Documents or folders (.md, .txt, .rst, .html). |
-| `-o` | option | `PosixPath('synthetic.jsonl')` | – |
+| `-o` | option | `Path('synthetic.jsonl')` | – |
 | `--provider` | option | – | A model for natural questions; omit for offline cloze questions. |
 | `--per-chunk` | option | `1` | – |
 | `--corpus` | option | – | Also write the chunks (the corpus to index). |

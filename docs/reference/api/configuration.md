@@ -53,7 +53,7 @@ and the privacy profile: `private` keeps sample text, `public` removes it.
 | `json` | `str \| None` | `None` |
 | `junit` | `str \| None` | `None` |
 | `markdown` | `str \| None` | `None` |
-| `profile` | `Literal` | `'private'` |
+| `profile` | `Literal['private', 'public']` | `'private'` |
 
 
 ### `Suite`
@@ -69,13 +69,13 @@ slices, gate rules, baseline, repeats and reports. Unknown keys are rejected so 
 | `description` | `str` | `''` |
 | `dataset` | `str` | required |
 | `target` | `str \| None` | `None` |
-| `target_options` | `dict` | `{}` |
+| `target_options` | `dict[str, Any]` | `{}` |
 | `judge` | `str \| None` | `None` |
-| `judge_options` | `dict` | `{}` |
+| `judge_options` | `dict[str, Any]` | `{}` |
 | `embedder` | `str \| None` | `None` |
-| `metrics` | `Union` | `'auto'` |
-| `slices` | `list` | `[]` |
-| `gates` | `list` | `[]` |
+| `metrics` | `list[str \| dict[str, Any]] \| Literal['auto']` | `'auto'` |
+| `slices` | `list[str]` | `[]` |
+| `gates` | `list[GateRule]` | `[]` |
 | `baseline` | `str \| None` | `None` |
 | `repeats` | `int` | `1` |
 | `concurrency` | `int` | `4` |
