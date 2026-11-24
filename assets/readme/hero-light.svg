@@ -1,0 +1,197 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" width="1200" height="440" role="img" aria-labelledby="t d">
+<title id="t">Guage Kit: Know how good it is, with the error bars to prove it.</title><desc id="d">Metrics, LLM judges, real statistics and CI quality gates for LLMs, RAG, retrieval, classifiers and agents.</desc>
+<defs>
+<radialGradient id="sky" cx="75%" cy="50%" r="80%"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#f4f6f5"/><stop offset="1" stop-color="#e2ebe8"/></radialGradient>
+<radialGradient id="core" r=".5"><stop offset="0" stop-color="#fff6d8"/><stop offset=".35" stop-color="#0f6e66" stop-opacity=".9"/><stop offset="1" stop-color="#0f6e66" stop-opacity="0"/></radialGradient>
+<linearGradient id="ink" x1="0" x2="1"><stop offset="0" stop-color="#0f6e66"/><stop offset="1" stop-color="#b45309"/></linearGradient>
+<style>
+.spin{transform-box:view-box;transform-origin:905px 220px;animation:spin 120s linear infinite}
+.orb{transform-box:view-box;transform-origin:905px 220px;animation:spin var(--p) linear infinite}
+.tw{animation:tw var(--t,4s) ease-in-out infinite}
+.pulse{transform-box:fill-box;transform-origin:center;animation:pulse 4s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}@keyframes tw{0%,100%{opacity:.2}50%{opacity:1}}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.12);opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+text{font-family:Inter,'Segoe UI',system-ui,-apple-system,sans-serif}</style></defs>
+<rect width="1200" height="440" rx="22" fill="url(#sky)"/>
+<circle class="tw" style="--t:2.8s;animation-delay:-2.7s" cx="392" cy="73" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:2.6s;animation-delay:-2.2s" cx="442" cy="34" r="0.8" fill="#14b8a6"/>
+<circle class="tw" style="--t:2.7s;animation-delay:-2.8s" cx="92" cy="48" r="1.3" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.5s;animation-delay:-2.0s" cx="1128" cy="275" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:3.5s;animation-delay:-0.7s" cx="1162" cy="30" r="0.8" fill="#14b8a6"/>
+<circle class="tw" style="--t:2.9s;animation-delay:-2.9s" cx="149" cy="140" r="0.8" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.5s;animation-delay:-3.1s" cx="232" cy="51" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.1s;animation-delay:-4.6s" cx="596" cy="233" r="1" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.9s;animation-delay:-1.2s" cx="437" cy="114" r="0.8" fill="#14b8a6"/>
+<circle class="tw" style="--t:5.1s;animation-delay:-1.4s" cx="688" cy="231" r="1" fill="#14b8a6"/>
+<circle class="tw" style="--t:3.1s;animation-delay:-1.7s" cx="1167" cy="60" r="1.3" fill="#14b8a6"/>
+<circle class="tw" style="--t:5.2s;animation-delay:-2.9s" cx="1111" cy="187" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.6s;animation-delay:-2.9s" cx="1043" cy="142" r="1" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.2s;animation-delay:-3.3s" cx="548" cy="363" r="1" fill="#14b8a6"/>
+<circle class="tw" style="--t:3.5s;animation-delay:-1.9s" cx="82" cy="305" r="1.3" fill="#14b8a6"/>
+<circle class="tw" style="--t:3.7s;animation-delay:-3.1s" cx="799" cy="19" r="1.3" fill="#14b8a6"/>
+<circle class="tw" style="--t:3.0s;animation-delay:-1.2s" cx="593" cy="102" r="1" fill="#14b8a6"/>
+<circle class="tw" style="--t:3.1s;animation-delay:-2.0s" cx="471" cy="376" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:5.5s;animation-delay:-1.4s" cx="338" cy="68" r="1.3" fill="#14b8a6"/>
+<circle class="tw" style="--t:5.9s;animation-delay:-0.8s" cx="500" cy="161" r="1.3" fill="#14b8a6"/>
+<circle class="tw" style="--t:2.5s;animation-delay:-4.2s" cx="218" cy="107" r="0.8" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.0s;animation-delay:-1.8s" cx="225" cy="128" r="0.8" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.1s;animation-delay:-4.4s" cx="678" cy="410" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:3.9s;animation-delay:-2.0s" cx="1133" cy="296" r="1.3" fill="#14b8a6"/>
+<circle class="tw" style="--t:2.7s;animation-delay:-1.0s" cx="578" cy="178" r="0.8" fill="#14b8a6"/>
+<circle class="tw" style="--t:2.9s;animation-delay:-2.8s" cx="202" cy="153" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:2.7s;animation-delay:-1.0s" cx="643" cy="409" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.6s;animation-delay:-2.4s" cx="454" cy="276" r="1" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.2s;animation-delay:-1.6s" cx="146" cy="215" r="1.3" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.2s;animation-delay:-3.5s" cx="180" cy="325" r="1" fill="#14b8a6"/>
+<circle class="tw" style="--t:3.0s;animation-delay:-2.7s" cx="619" cy="96" r="1" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.9s;animation-delay:-1.3s" cx="42" cy="232" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.4s;animation-delay:-3.9s" cx="443" cy="80" r="0.8" fill="#14b8a6"/>
+<circle class="tw" style="--t:5.3s;animation-delay:-4.1s" cx="399" cy="104" r="0.8" fill="#14b8a6"/>
+<circle class="tw" style="--t:3.7s;animation-delay:-0.1s" cx="883" cy="105" r="1.3" fill="#14b8a6"/>
+<circle class="tw" style="--t:3.2s;animation-delay:-3.0s" cx="43" cy="127" r="1" fill="#14b8a6"/>
+<circle class="tw" style="--t:5.8s;animation-delay:-1.8s" cx="416" cy="350" r="1" fill="#14b8a6"/>
+<circle class="tw" style="--t:3.7s;animation-delay:-2.4s" cx="270" cy="105" r="0.8" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.2s;animation-delay:-3.3s" cx="1173" cy="266" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:5.7s;animation-delay:-3.9s" cx="954" cy="46" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.0s;animation-delay:-3.2s" cx="895" cy="211" r="0.8" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.1s;animation-delay:-3.7s" cx="112" cy="407" r="1.3" fill="#14b8a6"/>
+<circle class="tw" style="--t:2.6s;animation-delay:-3.0s" cx="110" cy="77" r="0.8" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.8s;animation-delay:-1.8s" cx="559" cy="285" r="1.3" fill="#14b8a6"/>
+<circle class="tw" style="--t:5.3s;animation-delay:-3.6s" cx="657" cy="65" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.0s;animation-delay:-4.4s" cx="131" cy="325" r="0.8" fill="#14b8a6"/>
+<circle class="tw" style="--t:3.2s;animation-delay:-2.5s" cx="985" cy="99" r="1" fill="#14b8a6"/>
+<circle class="tw" style="--t:5.4s;animation-delay:-0.3s" cx="911" cy="147" r="1.3" fill="#14b8a6"/>
+<circle class="tw" style="--t:5.4s;animation-delay:-4.4s" cx="883" cy="387" r="1.3" fill="#14b8a6"/>
+<circle class="tw" style="--t:5.6s;animation-delay:-3.9s" cx="164" cy="74" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:3.1s;animation-delay:-2.4s" cx="728" cy="336" r="0.8" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.9s;animation-delay:-2.7s" cx="866" cy="244" r="1" fill="#14b8a6"/>
+<circle class="tw" style="--t:3.4s;animation-delay:-1.4s" cx="579" cy="336" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:5.2s;animation-delay:-4.6s" cx="921" cy="223" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.9s;animation-delay:-2.3s" cx="533" cy="267" r="0.8" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.9s;animation-delay:-4.4s" cx="639" cy="211" r="0.8" fill="#14b8a6"/>
+<circle class="tw" style="--t:5.4s;animation-delay:-0.7s" cx="1122" cy="119" r="0.8" fill="#14b8a6"/>
+<circle class="tw" style="--t:4.8s;animation-delay:-2.1s" cx="154" cy="196" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:5.6s;animation-delay:-0.8s" cx="261" cy="137" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:3.4s;animation-delay:-0.7s" cx="855" cy="287" r="0.8" fill="#14b8a6"/>
+<circle class="tw" style="--t:3.9s;animation-delay:-2.4s" cx="562" cy="324" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:5.0s;animation-delay:-5.0s" cx="1178" cy="360" r="0.8" fill="#14b8a6"/>
+<circle class="tw" style="--t:3.6s;animation-delay:-3.6s" cx="486" cy="187" r="1" fill="#14b8a6"/>
+<circle class="tw" style="--t:5.0s;animation-delay:-1.9s" cx="33" cy="243" r="1.3" fill="#14b8a6"/>
+<circle class="tw" style="--t:2.9s;animation-delay:-4.6s" cx="621" cy="134" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:3.4s;animation-delay:-0.2s" cx="280" cy="378" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:5.4s;animation-delay:-4.2s" cx="929" cy="124" r="0.8" fill="#14b8a6"/>
+<circle class="tw" style="--t:3.0s;animation-delay:-4.6s" cx="808" cy="407" r="1.3" fill="#14b8a6"/>
+<circle class="tw" style="--t:3.5s;animation-delay:-4.0s" cx="683" cy="304" r="0.6" fill="#14b8a6"/>
+<circle class="tw" style="--t:5.8s;animation-delay:-3.2s" cx="226" cy="386" r="1" fill="#14b8a6"/>
+<g class="spin">
+<circle cx="905" cy="220" r="170" fill="none" stroke="#c5d5d1" stroke-width="1.2"/><circle cx="905" cy="220" r="142" fill="none" stroke="#c5d5d1" stroke-dasharray="2 6"/>
+<line x1="905.0" y1="60.0" x2="905.0" y2="50.0" stroke="#c5d5d1" stroke-width="1.4"/>
+<line x1="919.4" y1="55.6" x2="919.8" y2="50.6" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="933.7" y1="57.5" x2="934.5" y2="52.6" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="947.7" y1="60.6" x2="949.0" y2="55.8" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="961.4" y1="65.0" x2="963.1" y2="60.3" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="974.7" y1="70.5" x2="976.8" y2="65.9" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="985.0" y1="81.4" x2="990.0" y2="72.8" stroke="#c5d5d1" stroke-width="1.4"/>
+<line x1="999.6" y1="84.8" x2="1002.5" y2="80.7" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="1011.1" y1="93.6" x2="1014.3" y2="89.8" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="1021.7" y1="103.3" x2="1025.2" y2="99.8" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="1031.4" y1="113.9" x2="1035.2" y2="110.7" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="1040.2" y1="125.4" x2="1044.3" y2="122.5" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="1043.6" y1="140.0" x2="1052.2" y2="135.0" stroke="#c5d5d1" stroke-width="1.4"/>
+<line x1="1054.5" y1="150.3" x2="1059.1" y2="148.2" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="1060.0" y1="163.6" x2="1064.7" y2="161.9" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="1064.4" y1="177.3" x2="1069.2" y2="176.0" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="1067.5" y1="191.3" x2="1072.4" y2="190.5" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="1069.4" y1="205.6" x2="1074.4" y2="205.2" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="1065.0" y1="220.0" x2="1075.0" y2="220.0" stroke="#c5d5d1" stroke-width="1.4"/>
+<line x1="1069.4" y1="234.4" x2="1074.4" y2="234.8" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="1067.5" y1="248.7" x2="1072.4" y2="249.5" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="1064.4" y1="262.7" x2="1069.2" y2="264.0" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="1060.0" y1="276.4" x2="1064.7" y2="278.1" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="1054.5" y1="289.7" x2="1059.1" y2="291.8" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="1043.6" y1="300.0" x2="1052.2" y2="305.0" stroke="#c5d5d1" stroke-width="1.4"/>
+<line x1="1040.2" y1="314.6" x2="1044.3" y2="317.5" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="1031.4" y1="326.1" x2="1035.2" y2="329.3" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="1021.7" y1="336.7" x2="1025.2" y2="340.2" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="1011.1" y1="346.4" x2="1014.3" y2="350.2" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="999.6" y1="355.2" x2="1002.5" y2="359.3" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="985.0" y1="358.6" x2="990.0" y2="367.2" stroke="#c5d5d1" stroke-width="1.4"/>
+<line x1="974.7" y1="369.5" x2="976.8" y2="374.1" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="961.4" y1="375.0" x2="963.1" y2="379.7" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="947.7" y1="379.4" x2="949.0" y2="384.2" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="933.7" y1="382.5" x2="934.5" y2="387.4" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="919.4" y1="384.4" x2="919.8" y2="389.4" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="905.0" y1="380.0" x2="905.0" y2="390.0" stroke="#c5d5d1" stroke-width="1.4"/>
+<line x1="890.6" y1="384.4" x2="890.2" y2="389.4" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="876.3" y1="382.5" x2="875.5" y2="387.4" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="862.3" y1="379.4" x2="861.0" y2="384.2" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="848.6" y1="375.0" x2="846.9" y2="379.7" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="835.3" y1="369.5" x2="833.2" y2="374.1" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="825.0" y1="358.6" x2="820.0" y2="367.2" stroke="#c5d5d1" stroke-width="1.4"/>
+<line x1="810.4" y1="355.2" x2="807.5" y2="359.3" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="798.9" y1="346.4" x2="795.7" y2="350.2" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="788.3" y1="336.7" x2="784.8" y2="340.2" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="778.6" y1="326.1" x2="774.8" y2="329.3" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="769.8" y1="314.6" x2="765.7" y2="317.5" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="766.4" y1="300.0" x2="757.8" y2="305.0" stroke="#c5d5d1" stroke-width="1.4"/>
+<line x1="755.5" y1="289.7" x2="750.9" y2="291.8" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="750.0" y1="276.4" x2="745.3" y2="278.1" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="745.6" y1="262.7" x2="740.8" y2="264.0" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="742.5" y1="248.7" x2="737.6" y2="249.5" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="740.6" y1="234.4" x2="735.6" y2="234.8" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="745.0" y1="220.0" x2="735.0" y2="220.0" stroke="#c5d5d1" stroke-width="1.4"/>
+<line x1="740.6" y1="205.6" x2="735.6" y2="205.2" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="742.5" y1="191.3" x2="737.6" y2="190.5" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="745.6" y1="177.3" x2="740.8" y2="176.0" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="750.0" y1="163.6" x2="745.3" y2="161.9" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="755.5" y1="150.3" x2="750.9" y2="148.2" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="766.4" y1="140.0" x2="757.8" y2="135.0" stroke="#c5d5d1" stroke-width="1.4"/>
+<line x1="769.8" y1="125.4" x2="765.7" y2="122.5" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="778.6" y1="113.9" x2="774.8" y2="110.7" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="788.3" y1="103.3" x2="784.8" y2="99.8" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="798.9" y1="93.6" x2="795.7" y2="89.8" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="810.4" y1="84.8" x2="807.5" y2="80.7" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="825.0" y1="81.4" x2="820.0" y2="72.8" stroke="#c5d5d1" stroke-width="1.4"/>
+<line x1="835.3" y1="70.5" x2="833.2" y2="65.9" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="848.6" y1="65.0" x2="846.9" y2="60.3" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="862.3" y1="60.6" x2="861.0" y2="55.8" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="876.3" y1="57.5" x2="875.5" y2="52.6" stroke="#c5d5d1" stroke-width="0.8"/>
+<line x1="890.6" y1="55.6" x2="890.2" y2="50.6" stroke="#c5d5d1" stroke-width="0.8"/>
+<text x="953.7" y="38.4" font-size="12" fill="#51606a" text-anchor="middle" dominant-baseline="central" transform="rotate(15.0 953.7 38.4)">text</text>
+<text x="1037.9" y="87.1" font-size="12" fill="#51606a" text-anchor="middle" dominant-baseline="central" transform="rotate(45.0 1037.9 87.1)">RAG</text>
+<text x="1086.6" y="171.3" font-size="12" fill="#51606a" text-anchor="middle" dominant-baseline="central" transform="rotate(75.0 1086.6 171.3)">retrieval</text>
+<text x="1086.6" y="268.7" font-size="12" fill="#51606a" text-anchor="middle" dominant-baseline="central" transform="rotate(105.0 1086.6 268.7)">agents</text>
+<text x="1037.9" y="352.9" font-size="12" fill="#51606a" text-anchor="middle" dominant-baseline="central" transform="rotate(135.0 1037.9 352.9)">safety</text>
+<text x="953.7" y="401.6" font-size="12" fill="#51606a" text-anchor="middle" dominant-baseline="central" transform="rotate(165.0 953.7 401.6)">calibration</text>
+<text x="856.3" y="401.6" font-size="12" fill="#51606a" text-anchor="middle" dominant-baseline="central" transform="rotate(195.0 856.3 401.6)">embeddings</text>
+<text x="772.1" y="352.9" font-size="12" fill="#51606a" text-anchor="middle" dominant-baseline="central" transform="rotate(225.0 772.1 352.9)">structured</text>
+<text x="723.4" y="268.7" font-size="12" fill="#51606a" text-anchor="middle" dominant-baseline="central" transform="rotate(255.0 723.4 268.7)">judges</text>
+<text x="723.4" y="171.3" font-size="12" fill="#51606a" text-anchor="middle" dominant-baseline="central" transform="rotate(285.0 723.4 171.3)">runtime</text>
+<text x="772.1" y="87.1" font-size="12" fill="#51606a" text-anchor="middle" dominant-baseline="central" transform="rotate(315.0 772.1 87.1)">classification</text>
+<text x="856.3" y="38.4" font-size="12" fill="#51606a" text-anchor="middle" dominant-baseline="central" transform="rotate(345.0 856.3 38.4)">semantic</text>
+</g>
+<circle cx="905" cy="220" r="50.0" fill="none" stroke="#c5d5d1" stroke-opacity=".45"/>
+<g class="orb" style="--p:18s;animation-delay:-14.4s"><circle cx="905" cy="170.0" r="7.5" fill="#5eead4"/></g>
+<circle cx="905" cy="220" r="70.0" fill="none" stroke="#c5d5d1" stroke-opacity=".45"/>
+<g class="orb" style="--p:27s;animation-delay:-2.3s"><circle cx="905" cy="150.0" r="7.5" fill="#f59e0b"/></g>
+<circle cx="905" cy="220" r="90.0" fill="none" stroke="#c5d5d1" stroke-opacity=".45"/>
+<g class="orb" style="--p:36s;animation-delay:-30.8s"><circle cx="905" cy="130.0" r="7.5" fill="#f2643d"/></g>
+<circle cx="905" cy="220" r="110.0" fill="none" stroke="#c5d5d1" stroke-opacity=".45"/>
+<g class="orb" style="--p:45s;animation-delay:-3.0s"><circle cx="905" cy="110.0" r="7.5" fill="#a78bfa"/></g>
+<circle cx="905" cy="220" r="130.0" fill="none" stroke="#c5d5d1" stroke-opacity=".45"/>
+<g class="orb" style="--p:54s;animation-delay:-46.6s"><circle cx="905" cy="90.0" r="7.5" fill="#7dd3fc"/></g>
+<circle cx="905" cy="220" r="150.0" fill="none" stroke="#c5d5d1" stroke-opacity=".45"/>
+<g class="orb" style="--p:63s;animation-delay:-28.6s"><circle cx="905" cy="70.0" r="7.5" fill="#0f6e66"/></g>
+<circle class="pulse" cx="905" cy="220" r="38" fill="url(#core)"/>
+<text x="905" y="220" font-size="22" text-anchor="middle" dominant-baseline="central" fill="#0f1a1f">◔</text>
+<text x="64" y="150" font-size="76" font-weight="900" letter-spacing="2" fill="url(#ink)">Guage Kit</text>
+<text x="66" y="200" font-size="23" font-style="italic" font-weight="600" fill="#0f1a1f">Know how good it is, with the error bars to prove it.</text>
+<text x="66" y="236" font-size="15.5" fill="#51606a">Metrics, LLM judges, real statistics and CI quality gates for LLMs, RAG, retrieval, classifiers and agents.</text>
+<rect x="66" y="276" width="129" height="30" rx="15" fill="#ffffff" stroke="#d3dedb"/><text x="130" y="291" font-size="13.5" font-weight="600" fill="#0f1a1f" text-anchor="middle" dominant-baseline="central">📏 167 metrics</text>
+<rect x="204.6" y="276" width="129" height="30" rx="15" fill="#ffffff" stroke="#d3dedb"/><text x="269" y="291" font-size="13.5" font-weight="600" fill="#0f1a1f" text-anchor="middle" dominant-baseline="central">⚖️ LLM judges</text>
+<rect x="343.2" y="276" width="145" height="30" rx="15" fill="#ffffff" stroke="#d3dedb"/><text x="416" y="291" font-size="13.5" font-weight="600" fill="#0f1a1f" text-anchor="middle" dominant-baseline="central">📊 95% intervals</text>
+<rect x="498.2" y="276" width="137" height="30" rx="15" fill="#ffffff" stroke="#d3dedb"/><text x="567" y="291" font-size="13.5" font-weight="600" fill="#0f1a1f" text-anchor="middle" dominant-baseline="central">🧪 paired tests</text>
+<rect x="66" y="316" width="104" height="30" rx="15" fill="#ffffff" stroke="#d3dedb"/><text x="118" y="331" font-size="13.5" font-weight="600" fill="#0f1a1f" text-anchor="middle" dominant-baseline="central">🚦 CI gates</text>
+<rect x="180.0" y="316" width="161" height="30" rx="15" fill="#ffffff" stroke="#d3dedb"/><text x="261" y="331" font-size="13.5" font-weight="600" fill="#0f1a1f" text-anchor="middle" dominant-baseline="central">📄 offline reports</text>
+</svg>

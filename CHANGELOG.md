@@ -17,10 +17,17 @@ All notable changes are recorded here. The project follows [semantic versioning]
 - **API reference** generated from the code: every public class and function, judge criteria with their anchors,
   perturbations, statistical methods with their papers, and every CLI option. `make docs-generate` regenerates it;
   CI fails when it is stale.
-- Website: an animated terminal on the homepage (also in the README), and the release version in the header and the
-  docs sidebar.
+- Website: an animated terminal on the homepage, and the release version in the header and the docs sidebar.
+- **A new README**, also the PyPI page: an animated hero (light and dark), animated terminal walkthroughs and a
+  how-it-works flow built from real output, a report gallery, a run-checked cookbook, the statistics written as
+  formulas, guarantees and a FAQ. The metric table, command list and error codes are generated from the code, and the
+  PyPI description (`README.pypi.md`) is generated from the README with its images served from the docs site, so the
+  animations play on PyPI too. CI checks all of it.
+- PyPI metadata: Beta status, a shorter description, more keywords.
 
 ### Fixed
+- Report tables keep confidence intervals on one line, and metric descriptions no longer show reStructuredText
+  backticks.
 - chrF ignores all whitespace (newlines and tabs included) and chrF++ separates leading punctuation, as sacreBLEU
   does; corpus chrF uses each sample's best reference.
 - A line break always ends a sentence, so rougeLsum matches rouge-score on one-sentence-per-line text.

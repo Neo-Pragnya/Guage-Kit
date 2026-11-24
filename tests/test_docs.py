@@ -50,14 +50,19 @@ def test_no_package_file_is_git_ignored() -> None:
     assert r.stdout.strip() == "", f"ignored package files: {r.stdout}"
 
 
-def test_readme_renders_on_pypi() -> None:
-    """PyPI shows the README without the repository: relative links and images break there, and the dynamic
-    pyversions badge is unreliable, so links must be absolute and the Python badge static."""
-    import re
-
-    text = (ROOT / "README.md").read_text(encoding="utf-8")
-    relative = re.findall(r"\]\((?!https?://|#)([^)]+)\)", text) + re.findall(
-        r'src="(?!https?://)([^"]+)"', text
-    )
-    assert not relative, f"relative links break on PyPI: {relative}"
-    assert "img.shields.io/pypi/pyversions" not in text
+def test_readme_renders_on_github_and_pypi() -> None:
+    """README.md is written for GitHub (relative links, <picture>, alerts, Mermaid); README.pypi.md, the PyPI long
+    description, is generated from it with absolute links and images served from GitHub Pages. Both are linted, and
+    the generated sections and the PyPI copy must be current."""
+    for args in (
+        ["scripts/check_readme.py", "README.md", "--pypi", "README.pypi.md"],
+        ["scripts/pypi_readme.py", "--check"],
+        ["scripts/readme_sections.py", "readme_sections.json", "--check"],
+    ):
+        r = subprocess.run(
+            [sys.executable, *args], cwd=ROOT, capture_output=True, text=True, check=False
+        )
+        assert r.returncode == 0, (args, r.stdout + r.stderr)
+    pypi = (ROOT / "README.pypi.md").read_text(encoding="utf-8")
+    assert "img.shields.io/pypi/pyversions" not in pypi  # that dynamic badge often fails to load
+    assert "](assets/" not in pypi and 'src="assets/' not in pypi

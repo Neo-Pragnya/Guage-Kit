@@ -194,6 +194,9 @@ def _decorator(level: Level) -> Callable[..., Callable[[Callable[..., Any]], Cal
     ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         def inner(fn: Callable[..., Any]) -> Callable[..., Any]:
             doc = description or (inspect.getdoc(fn) or "").split("\n\n")[0].replace("\n", " ")
+            doc = doc.replace(
+                "``", ""
+            )  # plain text: shown in the CLI, the report and the catalogue
             info = MetricInfo(
                 name=name,
                 family=family,
