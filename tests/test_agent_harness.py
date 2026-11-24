@@ -58,7 +58,9 @@ def test_tool_calls_come_from_a_recorded_trace() -> None:
 def test_negotiation_matches_pyproject() -> None:
     import tomllib
 
-    deps = tomllib.loads(Path("pyproject.toml").read_text())["project"]["dependencies"]
+    deps = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"][
+        "dependencies"
+    ]
     ananke = next(d for d in deps if d.startswith("ananke-plexus"))
     assert ananke == "ananke-plexus" + negotiation.SUPPORTED_ANANKE
     h = negotiation.check()
@@ -164,9 +166,11 @@ def test_evidence_bundle(tmp_path: Path, rag_samples: list[Sample]) -> None:
         project_root=tmp_path,
     )
     d = tmp_path / ".ananke" / "evidence" / run.run_id / "eval"
-    scores = json.loads((d / "scores.json").read_text())
+    scores = json.loads((d / "scores.json").read_text(encoding="utf-8"))
     assert {s["metric"] for s in scores} == {"faithfulness", "token_f1"}
-    assert json.loads((d / "policy-decision.json").read_text())["verdict"] == "BLOCK"
+    assert (
+        json.loads((d / "policy-decision.json").read_text(encoding="utf-8"))["verdict"] == "BLOCK"
+    )
     assert (d / "reports" / "junit.xml").exists() and (d / "manifest.json").exists()
     report = convert.to_report(run, [GateRule(metric="faithfulness", min=0.9)])
     assert report.gate_decision is not None and report.gate_decision.blocks

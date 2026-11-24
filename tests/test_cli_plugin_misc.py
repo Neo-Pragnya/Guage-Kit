@@ -76,7 +76,8 @@ def test_cli_metrics_data_probe_synth_demo(tmp_path: Path, monkeypatch: pytest.M
     (tmp_path / "docs").mkdir()
     (tmp_path / "docs" / "a.md").write_text(
         "Lumen was founded in 2019 in Lisbon. The team has 42 engineers working on sync and search features across Europe.\n"
-        * 3
+        * 3,
+        encoding="utf-8",
     )
     assert invoke("synth", "docs", "-o", "syn.jsonl", "--corpus", "corpus.jsonl").exit_code == 0  # type: ignore[attr-defined]
     assert len(Dataset.load(tmp_path / "syn.jsonl")) >= 1
@@ -173,7 +174,7 @@ def test_probes_and_synth_units() -> None:
 
 
 def test_error_codes_are_documented() -> None:
-    doc = (ROOT / "docs" / "reference" / "errors.md").read_text()
+    doc = (ROOT / "docs" / "reference" / "errors.md").read_text(encoding="utf-8")
     for code in CODES:
         assert code in doc, code
     with pytest.raises(ValueError):
@@ -181,7 +182,7 @@ def test_error_codes_are_documented() -> None:
 
 
 def test_packaging_metadata_and_licences() -> None:
-    meta = tomllib.loads((ROOT / "pyproject.toml").read_text())
+    meta = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     assert meta["project"]["license"] == "Apache-2.0"
     assert "streamlit" not in json.dumps(meta)
     deps = " ".join(
@@ -193,4 +194,4 @@ def test_packaging_metadata_and_licences() -> None:
     from guage_kit.version import __version__
 
     assert re.fullmatch(r"\d+\.\d+\.\d+", __version__)
-    assert __version__ in (ROOT / "CHANGELOG.md").read_text()
+    assert __version__ in (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")

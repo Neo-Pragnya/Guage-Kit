@@ -60,7 +60,9 @@ def discover() -> dict[str, AnankeEvaluator]:
     for mod_info in pkgutil.walk_packages(pkg.__path__, pkg.__name__ + "."):
         try:
             # module names come from walking Ananke's own installed package
-            module = importlib.import_module(mod_info.name)
+            module = importlib.import_module(
+                mod_info.name
+            )  # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
         except Exception:  # noqa: S112 - one broken module must not hide the rest
             continue
         for _, cls in inspect.getmembers(module, inspect.isclass):

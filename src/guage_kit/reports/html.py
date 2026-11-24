@@ -18,7 +18,9 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
-from importlib import resources
+from importlib import (
+    resources,
+)  # nosemgrep: python.lang.compatibility.python37.python37-compatibility-importlib2
 from pathlib import Path
 from typing import Any
 

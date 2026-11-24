@@ -200,7 +200,9 @@ def doctor(as_json: bool = typer.Option(False, "--json")) -> None:
         "harness": h,
         "extras": extras,
         "credentials_present": keys,
-        "metrics": len(REGISTRY.all()),
+        "metrics": len(
+            REGISTRY.all()
+        ),  # nosemgrep: python.sqlalchemy.performance.performance-improvements.len-all-count
         "ananke_evaluators": ANANKE_EVALUATORS,
     }
     if as_json:

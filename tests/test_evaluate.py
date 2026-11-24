@@ -28,11 +28,11 @@ def test_dataset_loading_aliases_and_formats(tmp_path: Path) -> None:
         if ext == ".jsonl":
             p.write_text("\n".join(json.dumps(r) for r in rows))
         elif ext == ".json":
-            p.write_text(json.dumps({"samples": rows}))
+            p.write_text(json.dumps({"samples": rows}), encoding="utf-8")
         else:
             import yaml
 
-            p.write_text(yaml.safe_dump(rows))
+            p.write_text(yaml.safe_dump(rows), encoding="utf-8")
         ds = Dataset.load(p)
         s = ds[0]
         assert (s.id, s.input, s.output, s.expected, s.contexts, s.metadata["difficulty"]) == (
@@ -44,7 +44,9 @@ def test_dataset_loading_aliases_and_formats(tmp_path: Path) -> None:
             "easy",
         )
     csv = tmp_path / "d.csv"
-    csv.write_text('id,question,answer,contexts,relevant_ids\n1,Q?,A,"[""c1"",""c2""]",a|b\n')
+    csv.write_text(
+        'id,question,answer,contexts,relevant_ids\n1,Q?,A,"[""c1"",""c2""]",a|b\n', encoding="utf-8"
+    )
     s = Dataset.load(csv)[0]
     assert s.contexts == ["c1", "c2"] and s.relevant_ids == ["a", "b"]
 
@@ -54,7 +56,7 @@ def test_dataset_errors(tmp_path: Path) -> None:
         Dataset.load(tmp_path / "missing.jsonl")
     assert e.value.code == "GK-DATA-001"
     bad = tmp_path / "bad.jsonl"
-    bad.write_text('{"id": 1}\n{oops\n')
+    bad.write_text('{"id": 1}\n{oops\n', encoding="utf-8")
     with pytest.raises(GuageError) as e:
         Dataset.load(bad)
     assert e.value.code == "GK-DATA-003" and "bad.jsonl:2" in e.value.message
@@ -241,7 +243,8 @@ def test_suite_config_and_baseline_regression_gate(tmp_path: Path) -> None:
         ]
     ).save(data)
     (tmp_path / "guage.yaml").write_text(
-        "name: t\ndataset: data.jsonl\nmetrics: [token_f1]\ngates:\n  - {metric: token_f1, min: 0.5}\n  - {metric: token_f1, max_drop: 0.05}\nreports: {html: out/r.html, junit: out/j.xml, markdown: out/s.md, json: out/run.json}\n"
+        "name: t\ndataset: data.jsonl\nmetrics: [token_f1]\ngates:\n  - {metric: token_f1, min: 0.5}\n  - {metric: token_f1, max_drop: 0.05}\nreports: {html: out/r.html, junit: out/j.xml, markdown: out/s.md, json: out/run.json}\n",
+        encoding="utf-8",
     )
     s = load_suite(tmp_path / "guage.yaml")
     run, cmp = run_suite(s)
@@ -270,7 +273,7 @@ def test_suite_config_and_baseline_regression_gate(tmp_path: Path) -> None:
 def test_suite_validation(tmp_path: Path) -> None:
     from guage_kit.config import load_suite
 
-    (tmp_path / "g.yaml").write_text("dataset: x.jsonl\nmetrix: [a]\n")
+    (tmp_path / "g.yaml").write_text("dataset: x.jsonl\nmetrix: [a]\n", encoding="utf-8")
     with pytest.raises(GuageError) as e:
         load_suite(tmp_path / "g.yaml")
     assert e.value.code == "GK-CONFIG-001" and "metrix" in e.value.message

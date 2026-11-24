@@ -37,7 +37,7 @@ def _run(output: str = "Paris is the capital.") -> object:
 
 
 def test_html_is_offline_and_csp_locked(tmp_path: Path) -> None:
-    page = write_report(_run(), tmp_path / "r.html").read_text()
+    page = write_report(_run(), tmp_path / "r.html").read_text(encoding="utf-8")
     csp = re.search(r'http-equiv="Content-Security-Policy" content="([^"]+)"', page).group(1)  # type: ignore[union-attr]
     assert (
         "default-src 'none'" in csp and "connect-src 'none'" in csp and "unsafe-inline" not in csp
@@ -57,7 +57,7 @@ def test_html_is_offline_and_csp_locked(tmp_path: Path) -> None:
 
 
 def test_hostile_text_cannot_break_out(tmp_path: Path) -> None:
-    page = write_report(_run(), tmp_path / "r.html").read_text()
+    page = write_report(_run(), tmp_path / "r.html").read_text(encoding="utf-8")
     data = re.search(
         r'<script type="application/json" id="guage-data">(.*?)</script>', page, re.DOTALL
     ).group(1)  # type: ignore[union-attr]
@@ -68,7 +68,9 @@ def test_hostile_text_cannot_break_out(tmp_path: Path) -> None:
     assert (
         json.loads(manifest)["schema"] == "guage-kit/report-manifest@1"
     )  # not replaced by the hostile placeholder
-    js = (Path(__file__).parents[1] / "src/guage_kit/reports/assets/report.js").read_text()
+    js = (Path(__file__).parents[1] / "src/guage_kit/reports/assets/report.js").read_text(
+        encoding="utf-8"
+    )
     assert (
         "innerHTML" not in js
         and "eval(" not in js
@@ -82,7 +84,7 @@ def test_safe_json_escapes() -> None:
 
 
 def test_public_profile_strips_text(tmp_path: Path) -> None:
-    page = write_report(_run(), tmp_path / "p.html", profile="public").read_text()
+    page = write_report(_run(), tmp_path / "p.html", profile="public").read_text(encoding="utf-8")
     model = json.loads(re.search(r'id="guage-data">(.*?)</script>', page, re.DOTALL).group(1))  # type: ignore[union-attr]
     assert (
         model["profile"] == "public" and "input" not in model["samples"][0] and model["limitations"]
@@ -92,7 +94,9 @@ def test_public_profile_strips_text(tmp_path: Path) -> None:
 
 def test_comparison_report(tmp_path: Path) -> None:
     a, b = _run("Berlin."), _run()
-    page = write_report(b, tmp_path / "c.html", comparison=compare(a, b)).read_text()
+    page = write_report(b, tmp_path / "c.html", comparison=compare(a, b)).read_text(
+        encoding="utf-8"
+    )
     model = json.loads(re.search(r'id="guage-data">(.*?)</script>', page, re.DOTALL).group(1))  # type: ignore[union-attr]
     assert model["comparison"]["metrics"]["token_f1"]["delta"] > 0
 
@@ -117,5 +121,5 @@ def test_demo_runs_offline(tmp_path: Path) -> None:
 
     files = run_demo(tmp_path)
     assert files["rag_compare"].stat().st_size > 20_000
-    summary = files["summary"].read_text()
+    summary = files["summary"].read_text(encoding="utf-8")
     assert "Support assistant v2" in summary and "improved" in summary

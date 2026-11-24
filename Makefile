@@ -27,7 +27,9 @@ test:
 	$(UV) run pytest
 
 coverage:
-	$(UV) run pytest --cov=src/guage_kit --cov-report=term --cov-report=xml --cov-fail-under=85
+	$(UV) run coverage run -m pytest
+	$(UV) run coverage xml -q
+	$(UV) run coverage report --fail-under=85
 
 docs-metrics:
 	$(UV) run python scripts/gen_metric_docs.py
