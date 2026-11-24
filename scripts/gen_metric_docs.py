@@ -187,7 +187,7 @@ def render_ananke(metrics: list[dict[str, Any]], family_of: dict[str, str]) -> s
             if m["params"]:
                 lines += ["**Arguments**", "", "| argument | default | meaning |", "| --- | --- | --- |"]
                 for p, default in m["params"].items():
-                    d = "required" if default is None else f"`{default!r}`"
+                    d = "required" if p in m["required_params"] else f"`{default!r}`"
                     lines.append(f"| `{p}` | {d} | {_cell((card.get('arguments') or {}).get(p, ''))} |")
                 lines.append("")
             if card.get("passes_when"):

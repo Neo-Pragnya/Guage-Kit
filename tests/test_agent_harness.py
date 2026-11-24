@@ -66,9 +66,9 @@ def test_negotiation_matches_pyproject() -> None:
     h = negotiation.check()
     assert h["compatible"], h["reasons"]
     assert (
-        negotiation.supported("0.3.45")
+        negotiation.supported("0.3.46")
         and not negotiation.supported("0.4.0")
-        and not negotiation.supported("0.3.44")
+        and not negotiation.supported("0.3.45")
     )
 
 

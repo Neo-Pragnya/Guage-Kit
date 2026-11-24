@@ -34,7 +34,7 @@ REQUIRED = ('evals.models', 'evals.trace', 'evals.normalize', 'evals.gate', 'eva
 ### `SUPPORTED_ANANKE`
 
 ```python
-SUPPORTED_ANANKE = '>=0.3.45,<0.4'
+SUPPORTED_ANANKE = '>=0.3.46,<0.4'
 ```
 
 ### `check`
@@ -140,7 +140,7 @@ Every evaluator class in the installed `ananke.plexus.evals.evaluators` package.
 register_all() -> int
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/harness/catalogue.py#L205)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/harness/catalogue.py#L207)
 
 Register every discovered Ananke evaluator in the metric registry (idempotent). Returns the count.
 
@@ -155,7 +155,7 @@ run_evaluator(
 ) -> Score
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/harness/catalogue.py#L131)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/harness/catalogue.py#L133)
 
 Score one sample with one Ananke evaluator.
 

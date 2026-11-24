@@ -34,7 +34,7 @@ guage doctor
 ```
 
 ```text
-Ananke Plexus 0.3.45 (>=0.3.45,<0.4): compatible
+Ananke Plexus 0.3.46 (>=0.3.46,<0.4): compatible
 Metrics: 167 (77 from Ananke)
 Extras: anthropic –, embeddings –, jsonschema –, bedrock –
 Credentials: ANTHROPIC_API_KEY unset, OPENAI_API_KEY unset, GUAGE_OPENAI_COMPATIBLE_KEY unset,

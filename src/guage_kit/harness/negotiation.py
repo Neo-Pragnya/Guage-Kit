@@ -12,7 +12,7 @@ import re
 from importlib import metadata
 from typing import Any
 
-SUPPORTED_ANANKE = ">=0.3.45,<0.4"  # keep in step with pyproject.toml (tests/test_packaging.py)
+SUPPORTED_ANANKE = ">=0.3.46,<0.4"  # keep in step with pyproject.toml (tests/test_packaging.py)
 
 # capability id -> (module, attribute path). Required ones are what this release of Guage Kit calls.
 CAPABILITIES: dict[str, tuple[str, str]] = {

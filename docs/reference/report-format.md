@@ -66,7 +66,7 @@ Embedded in every HTML report as `<script type="application/json" id="guage-mani
 
 ```json
 {"schema": "guage-kit/report-manifest@1", "renderer": "guage-kit/report-html@1", "guage_kit": "0.1.0",
- "ananke_plexus": "0.3.45", "view_model": "guage-kit/report-view@1", "profile": "public",
+ "ananke_plexus": "0.3.46", "view_model": "guage-kit/report-view@1", "profile": "public",
  "run_id": "20261124-060514-715322-cbb5", "dataset_fingerprint": "sha256:28bc…",
  "input_digest": "sha256:d38c…", "publication": "offline-single-file",
  "limitations": ["public profile: inputs, outputs, references, score explanations and the git revision were removed"]}

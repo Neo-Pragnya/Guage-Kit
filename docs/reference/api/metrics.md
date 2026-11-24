@@ -48,7 +48,7 @@ class BoundMetric(
 ) -> None
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L265)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L267)
 
 BoundMetric(info: 'MetricInfo', name: 'str', params: 'dict[str, Any]' = <factory>, threshold: 'float | None' = None)
 
@@ -67,7 +67,7 @@ class CorpusOutput(
 ) -> None
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L258)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L260)
 
 CorpusOutput(value: 'float | None', details: 'dict[str, Any]' = <factory>, per_sample: 'dict[str, float]' = <factory>)
 
@@ -83,7 +83,7 @@ class MetricContext(
 ) -> None
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L85)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L87)
 
 What a metric may use beyond the sample: a judge, an embedder and run-wide options.
 
@@ -109,12 +109,13 @@ class MetricInfo(
     preset: dict[str, Any] = <factory>,
     reference: str = '',
     source: str = 'guage-kit',
+    required_params: tuple[str, ...] = (),
 ) -> None
 ```
 
 [source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L37)
 
-MetricInfo(name: 'str', family: 'str', description: 'str', fn: 'Callable[..., Any]', level: 'Level' = 'sample', requires: 'tuple[str, ...]' = (), requires_any: 'tuple[str, ...]' = (), higher_is_better: 'bool' = True, value_range: 'tuple[float | None, float | None]' = (0.0, 1.0), deterministic: 'bool' = True, needs_judge: 'bool' = False, needs_embedder: 'bool' = False, extra: 'str | None' = None, params: 'dict[str, Any]' = <factory>, preset: 'dict[str, Any]' = <factory>, reference: 'str' = '', source: 'str' = 'guage-kit')
+MetricInfo(name: 'str', family: 'str', description: 'str', fn: 'Callable[..., Any]', level: 'Level' = 'sample', requires: 'tuple[str, ...]' = (), requires_any: 'tuple[str, ...]' = (), higher_is_better: 'bool' = True, value_range: 'tuple[float | None, float | None]' = (0.0, 1.0), deterministic: 'bool' = True, needs_judge: 'bool' = False, needs_embedder: 'bool' = False, extra: 'str | None' = None, params: 'dict[str, Any]' = <factory>, preset: 'dict[str, Any]' = <factory>, reference: 'str' = '', source: 'str' = 'guage-kit', required_params: 'tuple[str, ...]' = ())
 
 - **`MetricInfo.describe() -> dict[str, Any]`**
 
@@ -124,7 +125,7 @@ MetricInfo(name: 'str', family: 'str', description: 'str', fn: 'Callable[..., An
 class MetricRegistry() -> None
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L95)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L97)
 
 The set of known metrics: built-in families, Ananke Plexus evaluators and plugins registered through the
 `guage_kit.metrics` entry-point group. `REGISTRY` is the global instance.
@@ -160,7 +161,7 @@ corpus_metric(
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L178)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L180)
 
 Register a function as a corpus-level metric, computed over all usable samples at once.
 
@@ -175,7 +176,7 @@ arguments are as for `metric`.
 get_metric(name: str) -> MetricInfo
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L409)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L411)
 
 The declaration (`MetricInfo`) of a registered metric. Raises `GK-METRIC-001` for unknown names,
 suggesting the closest match.
@@ -186,7 +187,7 @@ suggesting the closest match.
 list_metrics(family: str | None = None) -> list[dict[str, Any]]
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L403)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L405)
 
 Every registered metric's declaration (what `guage metrics list` prints).
 
@@ -212,7 +213,7 @@ metric(
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L178)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L180)
 
 Register a function as a sample-level metric.
 
@@ -240,7 +241,7 @@ resolve(
 ) -> BoundMetric
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L359)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L361)
 
 Turn `"recall@5"`, `"bleu"` or `{"name": "rouge", "params": {...}, "threshold": 0.4, "as": "x"}`
 into a bound metric, validating parameters.

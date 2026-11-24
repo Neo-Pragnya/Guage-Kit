@@ -17,17 +17,16 @@ ananke.architecture.architecture_conformance:
   method: |
     Reads `.ananke/architecture/system.calm.json` under the project root (Guage Kit uses the current working
     directory). If the file is missing, the sample is skipped. It collects the `id` of every entry in the file's
-    `nodes` list, lower-cases the final output (as text) and looks for the literal substring `del <id>` for each id.
-    Any id found is a violation. If the file cannot be read or parsed as JSON, the result is a fail with the error
-    as the reason.
+    `nodes` list, lower-cases the final output (as text) and, for each non-empty id, looks for the substring
+    `del <id>` with the id lower-cased too, so ids match case-insensitively. Any id found is a violation. If the file
+    cannot be read or parsed as JSON, the result is a fail with the error as the reason.
   arguments: {}
-  passes_when: No `del <component id>` substring appears in the lower-cased final output (and the CALM file parsed).
+  passes_when: No `del <component id>` substring appears in the final output, compared case-insensitively (and the CALM file parsed).
   use_when:
     - "A coding agent works in a repository that keeps a CALM architecture file, and removing a declared component should be flagged."
   pitfalls:
-    - "It is a narrow text check on the final output, not an analysis of the change. Removals described in other words, or made without being mentioned, pass."
-    - "The output is lower-cased but component ids are not, so an id containing upper-case letters can never match."
-    - "Substring matching means `del api` also matches text such as `del api_gateway`."
+    - "It is a narrow text check on the final output, not an analysis of the change. Removals described in other words (`delete api`, `removed the api`), or made without being mentioned, pass."
+    - "Substring matching means `del api` also matches text such as `del api_gateway`, so a short id can be flagged for the removal of a different component."
     - "The CALM file is looked up relative to the directory Guage Kit runs in."
   example: |
     metrics:
@@ -73,20 +72,24 @@ ananke.architecture.blast_radius_discipline:
 ananke.architecture.breaking_contract:
   summary: Fails when the final output contains a phrase that signals a breaking API or contract change.
   method: |
-    Lower-cases the final output (as text) and checks each indicator phrase as a substring. The indicators are
-    `breaking_indicators` or, when that is not given or empty, the defaults: `remove field`, `rename field`,
-    `change type`, `remove endpoint`, `breaking change`. Matched phrases are kept as the score's value.
+    Lower-cases the final output (as text) and searches it for each non-empty indicator phrase, also lower-cased, as
+    a substring. An occurrence is ignored when it is negated: one of the words `no`, `not`, `non` or `without` is
+    among the three words just before it in the same clause (clauses end at `.`, `,`, `;`, `:`, `!`, `?` or a line
+    break), so `no breaking change`, `not a breaking change` and `non-breaking change` do not count. An indicator is
+    triggered when at least one of its occurrences is not negated. The indicators are `breaking_indicators` or, when
+    that is not given, the defaults: `remove field`, `rename field`, `change type`, `remove endpoint`,
+    `breaking change`. Triggered phrases are kept as the score's value.
   arguments:
     breaking_indicators: >-
-      Phrases that signal a breaking change (list of strings, optional; the defaults above are used when it is
-      missing or empty). Matched case-insensitively only if written in lower case, since the output is lower-cased
-      and the phrases are not. Set in params, `metadata.ananke`, or `metadata.breaking_indicators`.
-  passes_when: None of the indicator phrases occurs in the lower-cased final output.
+      Phrases that signal a breaking change (list of strings, optional; the defaults above are used only when it is
+      not given, and an explicit empty list means no indicators, so every sample passes). Matched
+      case-insensitively. Set in params, `metadata.ananke`, or `metadata.breaking_indicators`.
+  passes_when: Every occurrence of every indicator phrase in the final output (compared case-insensitively) is negated, or none occurs.
   use_when:
     - "Agents that summarise their changes in the final output, as a cheap flag for contract-breaking edits."
   pitfalls:
-    - "Negations still match: `no breaking change` fails."
-    - "An indicator with upper-case letters never matches."
+    - "The negation rule is a word-window heuristic: `we could not avoid a breaking change` is treated as negated and passes, while `isn't a breaking change` is not recognised as a negation and fails."
+    - "Phrases are substrings, so `change type` also matches `change types` and `exchange type`."
     - "It reads only the final output, not the diff."
   example: |
     metrics:
@@ -94,21 +97,24 @@ ananke.architecture.breaking_contract:
         params: {breaking_indicators: ["drop column", "remove endpoint"]}
 
 ananke.architecture.changed_file_scope:
-  summary: Checks that every changed file lies under one of the allowed path prefixes.
+  summary: Checks that every changed file lies inside one of the allowed directories (or is one of the allowed paths).
   method: |
-    Reads `metadata.changed_files`; skips the sample when it is absent or empty. A file is out of scope when it does
-    not start with any string in `allowed_paths` (plain string prefix comparison). Out-of-scope files are kept as
-    the score's value.
+    Reads `metadata.changed_files`; skips the sample when it is absent or empty. Each changed file and each allowed
+    path is tidied first: backslashes become `/`, any leading `./` is removed and a trailing `/` is dropped. A file
+    is in scope when it equals an allowed path or starts with that path followed by `/`, so scopes match by whole
+    path segment. An allowed path of `.` (or the empty string) covers every file. Out-of-scope files are kept as the
+    score's value.
   arguments:
     allowed_paths: >-
-      Path prefixes the change may touch (list of strings, required). Guage Kit takes it from params,
-      `metadata.ananke`, or `metadata.allowed_paths`; the sample is skipped when none gives it.
-  passes_when: Every entry of `metadata.changed_files` starts with some entry of `allowed_paths`.
+      Directories or files the change may touch (list of strings, required; a trailing `/` is optional). Guage Kit
+      takes it from params, `metadata.ananke`, or `metadata.allowed_paths`; the sample is skipped when none gives it.
+  passes_when: Every entry of `metadata.changed_files` is an allowed path or lies under one, segment by segment.
   use_when:
     - "Coding agents that should stay inside a package, service or directory."
   pitfalls:
-    - "Prefix matching is textual: `src/api` also allows `src/api_old/x.py`. End prefixes with `/` to mean a directory."
-    - "Paths are compared as written; `./src/a.py` does not start with `src/`."
+    - "`..` segments are not resolved: `src/billing/../auth/x.py` counts as inside `src/billing`. List changed files as clean repository-relative paths."
+    - "Relative and absolute paths are not reconciled: `/repo/src/a.py` is not inside `src`."
+    - "Matching is case-sensitive."
   example: |
     metrics:
       - name: ananke.architecture.changed_file_scope
@@ -179,16 +185,18 @@ ananke.architecture.unexpected_dependency:
 ananke.efficiency.cache_efficiency:
   summary: Ratio of cache hits to model calls in the trace.
   method: |
-    Counts `model` spans; skips the sample when there are none. Counts spans of any kind whose
-    `attributes["cache.hit"]` is exactly `true`. The score is hits ÷ model calls, rounded to three decimals.
+    Counts `model` spans; skips the sample when there are none. Among those model spans, counts the ones whose
+    `attributes["cache.hit"]` is exactly `true`. The score is hits ÷ model calls (so between 0 and 1), rounded to
+    three decimals.
   arguments: {}
   passes_when: The ratio is at least 0.3. The metric value is the ratio.
   use_when:
     - "Recorded traces whose model spans mark prompt-cache hits with a `cache.hit` attribute."
   pitfalls:
     - "Needs a recorded trace: the trace Guage Kit builds from tool calls has no model spans, so the sample is skipped."
-    - "Hits are counted on every span kind but divided by model spans only, so the ratio can exceed 1 when other spans carry `cache.hit`."
+    - "Only model spans are read; a `cache.hit` attribute on a tool or retrieval span (a cached search result, say) is ignored."
     - "`cache.hit` must be the boolean `true`; a string `\"true\"` is not counted."
+    - "A hit is counted per span, not per cached token, so a call that reused only a small part of its prompt counts as a full hit."
   example: |
     {"id": "e1", "trace": {"spans": [
       {"span_id": "m1", "kind": "model", "name": "llm", "start_time": "2025-01-01T00:00:00Z", "attributes": {"cache.hit": true}},
@@ -217,9 +225,9 @@ ananke.efficiency.latency:
     fills it from the sample's `latency_ms` (truncated to an integer). The duration is kept as the score's value.
   arguments:
     max_duration_ms: Largest allowed duration in milliseconds (int, optional, default 30000). Set in params, `metadata.ananke`, or `metadata.max_duration_ms`.
-  passes_when: "`duration_ms <= max_duration_ms` for the sample."
+  passes_when: "`duration_ms <= max_duration_ms` for the sample; a failing sample's reason reads `latency <n> ms exceeds the limit <max> ms`."
   pitfalls:
-    - "The failure message calls the limit a p95 target, but the check is per sample; the metric's mean is the share of samples within the limit, not a percentile."
+    - "The limit applies to each sample on its own; the metric's mean is the share of samples within the limit, not a percentile such as p95."
     - "Same check as `ananke.efficiency.wall_clock`, which takes its limit in seconds."
   example: |
     metrics:
@@ -306,37 +314,44 @@ ananke.efficiency.wall_clock:
 # ── multi_agent ──────────────────────────────────────────────────────────────────────────────────────────────────
 
 ananke.multi_agent.cyclic_delegation:
-  summary: Fails when the same agent appears in more than one subagent span.
+  summary: Fails when agents delegate to each other in a cycle (A delegates to B, which delegates back to A).
   method: |
-    Walks the `subagent` spans in order, taking each span's agent as `attributes.agent_id` (or the span name when
-    absent). The first agent seen a second time is a failure. With no subagent spans it passes.
+    Builds a delegation graph from the trace. A span's agent is `attributes.agent_id`, or the span name when that is
+    absent. For each `subagent` span it follows `parent_span_id` upwards to the nearest `subagent` or `agent` span;
+    that span's agent is the delegator and the subagent span's agent is the delegate, giving one edge. A subagent
+    span with no such ancestor was delegated from the trace root and adds no edge. The evaluator fails when the
+    graph contains a cycle (including an agent delegating to itself), reporting it as `A -> B -> A`; otherwise it
+    passes. With no subagent spans it passes.
   arguments: {}
-  passes_when: Every subagent span names a different agent.
+  passes_when: The delegation graph reconstructed from `parent_span_id` links has no cycle.
   pitfalls:
-    - "It does not reconstruct a delegation graph from `parent_span_id`: calling the same specialist twice in sequence fails even when there is no cycle."
+    - "It depends on `parent_span_id`: subagent spans recorded flat, without links to the delegating agent's span, add no edges and never fail."
+    - "Using the same agent more than once is not a cycle; only delegation that leads back to an agent already on the path is."
     - "Without a recorded trace there are no subagent spans, so every sample passes."
   example: |
     {"id": "m1", "trace": {"spans": [
-      {"span_id": "s1", "kind": "subagent", "name": "researcher", "start_time": "2025-01-01T00:00:00Z"},
-      {"span_id": "s2", "kind": "subagent", "name": "writer", "start_time": "2025-01-01T00:00:01Z"}]}}
+      {"span_id": "a0", "kind": "agent", "name": "orchestrator", "start_time": "2025-01-01T00:00:00Z"},
+      {"span_id": "s1", "kind": "subagent", "name": "researcher", "parent_span_id": "a0", "start_time": "2025-01-01T00:00:01Z"},
+      {"span_id": "s2", "kind": "subagent", "name": "writer", "parent_span_id": "a0", "start_time": "2025-01-01T00:00:02Z"}]}}
 
 ananke.multi_agent.delegation_accuracy:
   summary: Checks that each delegated task went to the agent expected for it.
   method: |
     For every `subagent` span, the task is `attributes.task` (or the span name) and the agent is
     `attributes.agent_id` (or the span name). If the task is a key of `expected_delegations` and the agent differs
-    from the mapped agent, that is a violation. Tasks not in the mapping are ignored. With no subagent spans and an
-    empty mapping it passes.
+    from the mapped agent, that is a violation (`expected X, got Y`). Every task in the mapping that no subagent span
+    carries is also a violation (`expected X, never delegated`). Tasks not in the mapping are ignored. An empty
+    mapping always passes.
   arguments:
     expected_delegations: >-
       Mapping of task name to the agent id that should handle it (dict of string to string, required). Guage Kit
       takes it from params, `metadata.ananke`, or `metadata.expected_delegations`; the sample is skipped when none
       gives it.
-  passes_when: No subagent span hands a mapped task to a different agent.
+  passes_when: Every task in `expected_delegations` was delegated at least once, and no subagent span hands a mapped task to a different agent.
   pitfalls:
-    - "An expected task that was never delegated is not flagged; only wrong assignments fail."
-    - "Without `task` and `agent_id` attributes both fall back to the span name, so the check compares the name with itself."
-    - "Without a recorded trace there are no subagent spans, so every sample passes."
+    - "Without `task` and `agent_id` attributes both fall back to the span name, so a span named after a mapped task is judged as handled by an agent of that same name, which is almost always a mismatch."
+    - "Without a recorded trace there are no subagent spans, so every mapped task counts as never delegated and the sample fails."
+    - "Extra delegations of unmapped tasks are not penalised."
   example: |
     metrics:
       - name: ananke.multi_agent.delegation_accuracy
@@ -427,14 +442,14 @@ ananke.outcome.exact_match:
   summary: Checks that the final output, as text, equals the expected value exactly.
   method: |
     Skips the sample when there is no expected value (Guage Kit uses `expected`, or the first of `references`).
-    Converts both the final output and the expected value to text with Python's `str` and compares them with no
-    normalisation.
+    A missing final output (None) is a fail with the reason "no final output". Otherwise it converts both the final
+    output and the expected value to text with Python's `str` and compares them with no normalisation.
   arguments: {}
-  passes_when: "`str(final_output) == str(expected)`."
+  passes_when: "The final output is present and `str(final_output) == str(expected)`."
   pitfalls:
     - "Case, whitespace and trailing newlines all matter. Use `ananke.outcome.normalized_match` to ignore case and surrounding whitespace."
     - "Structured values compare by their Python text form, so key order and quote style matter; use `ananke.outcome.json_equality` for JSON."
-    - "Python's text form is used: the number 42 equals the string `42`, and a missing output is the text `None`."
+    - "Python's text form is used: the number 42 equals the string `42`, and `False` equals the string `False`."
 
 ananke.outcome.json_equality:
   summary: Checks that the final output and the expected value are the same JSON value, ignoring key order.
@@ -454,10 +469,11 @@ ananke.outcome.json_equality:
 ananke.outcome.normalized_match:
   summary: Checks that the final output equals the expected value after trimming whitespace and lower-casing.
   method: |
-    Skips the sample when there is no expected value. Converts both sides to text, strips leading and trailing
-    whitespace, lower-cases them, and compares.
+    Skips the sample when there is no expected value. A missing final output (None) is a fail with the reason
+    "no final output". Otherwise it converts both sides to text, strips leading and trailing whitespace, lower-cases
+    them, and compares.
   arguments: {}
-  passes_when: "`str(final_output).strip().lower() == str(expected).strip().lower()`."
+  passes_when: "The final output is present and `str(final_output).strip().lower() == str(expected).strip().lower()`."
   pitfalls:
     - "Inner whitespace and punctuation are not normalised: `New  York.` does not match `new york`."
 
@@ -520,17 +536,19 @@ ananke.outcome.schema_conformance:
 ananke.outcome.set_equality:
   summary: Checks that the final output and the expected value contain the same items, ignoring order and repeats.
   method: |
-    Skips the sample when there is no expected value. Builds a set from each side with Python's `set` and compares
-    them; the reason lists missing and extra items. Items that cannot be put in a set (dicts, lists) make it fail
-    with the error as the reason.
+    Skips the sample when there is no expected value. Each side is first turned into items: a string that parses as
+    a JSON list becomes that list; any other string is split on newlines and commas, with each piece stripped of
+    surrounding whitespace and empty pieces dropped; other values are used as they are. It then builds a set from
+    each side with Python's `set` (a missing output is the empty set) and compares them; the reason lists missing
+    and extra items. Items that cannot be put in a set (dicts, lists) make it fail with the error as the reason.
   arguments: {}
   passes_when: The set of output items equals the set of expected items.
   pitfalls:
-    - "A string becomes the set of its characters: `abc` equals `cab`, and a list output never equals a string expected. Give lists on both sides."
-    - "A dict becomes the set of its keys."
-    - "Items compare exactly, so case and whitespace matter."
+    - "Items compare exactly, so case matters, and JSON-parsed numbers differ from strings: the output `[1, 2]` does not equal the expected `[\"1\", \"2\"]`, while `1, 2` (split text) does."
+    - "Splitting on commas breaks items that contain one: `Paris, France` becomes two items. Give a JSON list or a real list for such items."
+    - "A dict (not a string) becomes the set of its keys."
   example: |
-    {"id": "t1", "output": ["paris", "rome"], "expected": ["rome", "paris"]}
+    {"id": "t1", "output": "paris, rome", "expected": ["rome", "paris"]}
 
 ananke.outcome.task_completion:
   summary: Checks that the agent produced a non-empty final output, or deliberately produced none when that is expected.
@@ -542,8 +560,8 @@ ananke.outcome.task_completion:
   passes_when: The final output is present and its emptiness matches `expected.task_completed` (default true).
   pitfalls:
     - "It checks only that something was produced, not that it is right; pair it with an outcome match or a judge."
-    - "With `task_completed: false`, a missing output still fails; only an empty one (such as an empty string) passes."
-    - "When the sample has a recorded trace, Ananke's normaliser turns an empty final output into a missing one, so `task_completed: false` can only pass on samples without a recorded trace."
+    - "With `task_completed: false`, a missing output (None) still fails; only a present but falsy one (`\"\"`, `0`, `False`, `[]`, `{}`) passes. Recorded traces keep such falsy final outputs as they are."
+    - "Emptiness is Python truthiness, so a final output of `0` or `False` counts as no output and fails the default check."
   example: |
     {"id": "t2", "output": "", "expected": {"task_completed": false}}
 
@@ -552,16 +570,18 @@ ananke.outcome.task_completion:
 ananke.planning.plan_adherence:
   summary: Share of the planned steps that the agent actually executed as tool calls.
   method: |
-    Uses the first `planning` span; skips the sample when there is none or its output is not a non-empty list. The
-    planned steps are the list's items; the executed steps are the names of `tool` spans. The score is
+    Uses the first `planning` span; skips the sample when there is none or its output is not a non-empty list. Each
+    list item gives one planned step: a string is used as it is; an object (dict) is named by the first non-empty
+    string among its `name`, `step`, `tool`, `action` and `title` keys (or, when it has none, by its JSON text); a
+    nested list is named by its JSON text. The executed steps are the names of `tool` spans. The score is
     |planned ∩ executed| ÷ |planned| over distinct values, rounded to three decimals.
   arguments: {}
   passes_when: At least 70% of the distinct planned steps were executed. The metric value is the share.
   pitfalls:
-    - "Planned steps must be the exact tool names; a plan of prose steps scores 0."
+    - "Planned step names must be the exact tool names; a plan of prose steps (or objects whose `name` is prose) scores 0."
+    - "For an object step, only the first of `name`, `step`, `tool`, `action`, `title` that holds a string is used: `{\"step\": \"Find the order\", \"tool\": \"lookup_order\"}` is named `Find the order` and does not match the tool."
     - "Order and repetition are ignored, and unplanned extra tool calls are not penalised."
-    - "Plan items must be hashable (strings); a list of step objects raises an error."
-    - "Needs a recorded trace with a planning span."
+    - "Needs a recorded trace with a planning span whose output is a list; a text plan is skipped."
   example: |
     {"id": "p1", "trace": {"spans": [
       {"span_id": "p", "kind": "planning", "name": "plan", "start_time": "2025-01-01T00:00:00Z", "output": ["lookup_order", "issue_refund"]},
@@ -585,17 +605,21 @@ ananke.planning.plan_coverage:
        "output": "1. Verify identity 2. Look up order 3. Issue refund"}]}}
 
 ananke.planning.plan_dependency:
-  summary: Checks that when the plan mentions a step, it also mentions that step's prerequisite.
+  summary: Checks that when the plan mentions a step, it also mentions that step's prerequisite earlier.
   method: |
     Uses the first `planning` span; skips the sample when there is none. Lower-cases the span's output as text. For
-    each `(before, after)` pair, if `after` occurs in the text and `before` does not, that is a violation.
+    each `(before, after)` pair it finds the first occurrence of each (case-insensitive substring). When `after`
+    does not occur, the pair is ignored. When `after` occurs and `before` does not, that is a violation
+    (`'after' requires 'before'`); when `before` first occurs later in the text than `after`, that is also a
+    violation (`'after' comes before its prerequisite 'before'`).
   arguments:
     dependency_pairs: >-
       Prerequisite pairs as `[before, after]` (list of two-item lists, required). Guage Kit takes it from params,
       `metadata.ananke`, or `metadata.dependency_pairs`; the sample is skipped when none gives it.
-  passes_when: Every step in an `after` position that the plan mentions has its `before` step mentioned too.
+  passes_when: For every pair whose `after` step the plan mentions, the `before` step is mentioned too and its first mention comes earlier.
   pitfalls:
-    - "Order is not checked: a plan that issues the refund first and verifies identity afterwards passes."
+    - "Only first mentions are compared, by position in the text. A plan that names a step in an introduction (\"before we issue refund, ...\") before listing the prerequisite can fail even though the listed steps are in order."
+    - "Steps are substrings, so `deploy` also matches `redeploy` and `deployment`."
     - "Only the planning span's output is read (not its input), unlike `plan_coverage`."
   example: |
     metrics:
@@ -606,13 +630,16 @@ ananke.planning.plan_feasibility:
   summary: Checks that the plan has no more than a maximum number of steps.
   method: |
     Uses the first `planning` span; skips the sample when there is none. When its output is a list, the step count
-    is the list's length; any other output counts as 0 steps. The count is kept as the score's value.
+    is the list's length. When it is text, the count is the number of lines that start a numbered item (`1.` or
+    `1)`) or a bullet (`-`, `*`, `+`, `•`), or, when the text has no such lines, the number of non-empty lines. Any
+    other output (a dict, say) counts as 0 steps. The count is kept as the score's value.
   arguments:
     max_steps: Largest allowed number of plan steps (int, optional, default 20). Set in params, `metadata.ananke`, or `metadata.max_steps`.
   passes_when: The plan's step count is at most `max_steps`.
   pitfalls:
     - "Despite the name, it only checks length, not whether steps can be carried out."
-    - "A plan given as text (not a list) counts as 0 steps and always passes."
+    - "Text steps are counted by line: a numbered plan written on one line (`1. Verify 2. Refund`) counts as 1 step, and a prose plan counts its lines, not its steps."
+    - "Once any line is numbered or bulleted, unmarked lines (headings, notes, wrapped continuation lines) are not counted."
 
 ananke.planning.plan_revision_quality:
   summary: Checks that the agent re-planned no more than a maximum number of times.
@@ -630,15 +657,21 @@ ananke.planning.plan_risk:
   summary: Fails when the plan mentions a risky operation such as delete, drop or force push.
   method: |
     Uses the first `planning` span; skips the sample when there is none. Lower-cases the span's output as text and
-    checks each risky keyword as a substring. Matched keywords are kept as the score's value.
+    searches it for each risky keyword, also lower-cased, as whole words: the keyword may not start or end inside a
+    longer word, and the words of a multi-word keyword may be separated by any whitespace. The last word may carry a
+    regular inflection (`-s`, `-es`, `-d`, `-ed`, `-ing`, a doubled final letter before `-ed`/`-ing`, or `-e`
+    replaced by `-ing`), so `drop` matches `drops`, `dropped` and `dropping`, and `delete` matches `deleted` and
+    `deleting`, while `dropdown` and `undelete` do not match. Matched keywords are kept as the score's value.
   arguments:
     risky_keywords: >-
       Keywords that mark a risky step (list of strings, optional; defaults to `delete`, `drop`, `truncate`,
-      `rm -rf`, `force push` when missing or empty). Write them in lower case, since only the plan is lower-cased.
-      Set in params, `metadata.ananke`, or `metadata.risky_keywords`.
-  passes_when: No risky keyword occurs in the lower-cased plan output.
+      `rm -rf`, `force push` when missing or empty). Matched case-insensitively. Set in params, `metadata.ananke`, or
+      `metadata.risky_keywords`.
+  passes_when: No risky keyword (or a regular inflection of its last word) occurs as whole words in the plan output.
   pitfalls:
-    - "Substring matching flags innocent words: `drop` matches `dropdown`, `delete` matches `undelete`."
+    - "Word boundaries treat `_` as part of a word, so `drop` does not match `drop_table`, and `force push` does not match `force-push`. List such spellings as their own keywords."
+    - "Only regular inflections are recognised; irregular forms and other derived words (`deletion`, `truncation`) do not match."
+    - "Mentions are matched regardless of context, so a plan step saying it will not drop anything still fails."
     - "Only the plan is read; risky tool calls made without being planned are not seen. Use the `ananke.safety` evaluators for those."
   example: |
     metrics:
