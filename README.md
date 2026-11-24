@@ -189,7 +189,7 @@ the paper behind it.
 
 ## 🐍 Python cookbook
 
-Every example below was run against guage-kit 0.1.1; the comments are its real output.
+Every example below was run against guage-kit 0.1.2; the comments are its real output.
 
 **Score outputs you already have**
 

@@ -4,6 +4,22 @@ All notable changes are recorded here. The project follows [semantic versioning]
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-24
+
+### Changed
+- **Requires Ananke Plexus 0.3.46** (`>=0.3.46,<0.4`), which fixes bugs in its agent-trace evaluators found while
+  documenting them for Guage Kit: `graph_context_precision` no longer exceeds 1 (it raised an error), path checks in
+  `filesystem_scope` resist `..` traversal, `shell_policy` matches whole commands, `cyclic_delegation` fails only on
+  real cycles, recovery must follow the failure, retrieval matches whole ids, and more. The evaluator cards and the
+  [Ananke evaluators page](https://neo-pragnya.github.io/Guage-Kit/docs/reference/metrics/ananke/) describe the fixed
+  behaviour.
+
+### Fixed
+- Ananke evaluator arguments: the metric listing now tells required arguments from optional ones that default to
+  `None` (`required_params` in `guage metrics show --json`), and the reference marks only truly required ones.
+- An argument that takes a single step (`required_step`'s `required`) receives the goal, the last item, when
+  `metadata.ananke` gives a list shared with other evaluators, instead of the whole list.
+
 ## [0.1.1] - 2026-11-24
 
 ### Added

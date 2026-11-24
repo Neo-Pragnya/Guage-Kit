@@ -7,7 +7,7 @@ description: How Guage Kit negotiates the Ananke Plexus version, which Ananke in
 
 ## Version negotiation
 
-Guage Kit supports Ananke Plexus `>=0.3.45,<0.4` (`SUPPORTED_ANANKE` in `guage_kit.harness.negotiation`, kept in step
+Guage Kit supports Ananke Plexus `>=0.3.46,<0.4` (`SUPPORTED_ANANKE` in `guage_kit.harness.negotiation`, kept in step
 with the dependency in `pyproject.toml` by a test). Negotiation is explicit: Guage Kit reads the installed version,
 checks it against the range, and probes the interfaces it calls by importing them (nothing runs):
 

@@ -109,13 +109,15 @@ def _resolve_args(
     args: dict[str, Any] = {}
     missing: list[str] = []
     for name, default in ev.params.items():
+        single = ev.annotations.get(name, "").strip() == "str"
         if config.get(name) is not None:
             args[name] = config[name]
         elif name in per_sample:
-            args[name] = per_sample[name]
+            value = per_sample[name]
+            # a flat metadata.ananke list serves several evaluators; a single-step argument takes its goal (the last)
+            args[name] = value[-1] if single and isinstance(value, list) and value else value
         elif name in _FROM_EXPECTED_NAMES and expected_names:
             # a single-step argument (``required: str``) is the goal action: the last expected call
-            single = ev.annotations.get(name, "").strip() == "str"
             args[name] = expected_names[-1] if single else expected_names
         elif name == "optimal_steps" and expected_names:
             args[name] = len(expected_names)
@@ -222,6 +224,7 @@ def register_all() -> int:
                 requires_any=("output", "tool_calls", "trace", "contexts"),
                 deterministic=ev.deterministic,
                 params={k: (None if v is REQUIRED else v) for k, v in ev.params.items()},
+                required_params=tuple(ev.required),
                 reference="Ananke Plexus evaluation harness",
                 source="ananke-plexus",
             )

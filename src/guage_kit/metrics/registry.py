@@ -55,6 +55,7 @@ class MetricInfo:
     preset: dict[str, Any] = field(default_factory=dict)  # fixed parameters for a named variant
     reference: str = ""  # where the metric is defined (paper, spec)
     source: str = "guage-kit"
+    required_params: tuple[str, ...] = ()  # parameters with no default (Ananke evaluator arguments)
 
     def describe(self) -> dict[str, Any]:
         return {
@@ -73,6 +74,7 @@ class MetricInfo:
             "params": {k: _jsonable(v) for k, v in {**self.params, **self.preset}.items()},
             "reference": self.reference,
             "source": self.source,
+            "required_params": list(self.required_params),
         }
 
 
