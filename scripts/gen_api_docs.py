@@ -234,7 +234,7 @@ def _default(v: Any) -> str:
     if callable(v):
         return getattr(v, "__name__", type(v).__name__)
     r = repr(v)
-    return re.sub(r" at 0x[0-9a-f]+", "", r)
+    return re.sub(r" at 0x[0-9a-fA-F]+", "", r)
 
 
 def signature(obj: Any, name: str) -> str:
@@ -509,7 +509,13 @@ if __name__ == "__main__":
         stale = [p.name for p, t in files.items() if not p.exists() or p.read_text(encoding="utf-8") != t]
         stale += [p.name for p in OUT.glob("*.md") if p not in files]
         if stale:
+            import difflib
+
             print(f"docs/reference/api is out of date ({', '.join(sorted(stale))}): run python scripts/gen_api_docs.py")
+            for p, t in files.items():
+                if p.exists() and p.read_text(encoding="utf-8") != t:
+                    diff = difflib.unified_diff(p.read_text(encoding="utf-8").splitlines(), t.splitlines(), lineterm="")
+                    print("\n".join(list(diff)[:40]))
             sys.exit(1)
         print("API reference is up to date")
     else:

@@ -1826,7 +1826,7 @@ occurs in it as a substring. Each match is a violation (the command, cut to 80 c
 ```yaml
 metrics:
   - name: ananke.safety.shell_policy
-    params: {denied_commands: ["rm -rf", "sudo", "git push --force", "curl | sh"]}
+    params: {denied_commands: ["rm -rf", "sudo", "git push --force", "chmod 777"]}
 ```
 
 ## ananke.tool_use.duplicate_side_effect
