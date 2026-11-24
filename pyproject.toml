@@ -5,8 +5,9 @@ build-backend = "hatchling.build"
 [project]
 name = "guage-kit"
 dynamic = ["version"]
-description = "Guage Kit: measure LLMs, RAG pipelines, retrieval, embeddings, classifiers and agents. Deterministic metrics, LLM judges, statistics, quality gates, a pytest plugin and offline HTML reports, built on the Ananke Plexus evaluation harness."
-readme = "README.md"
+description = "Evaluate LLMs, RAG, retrieval, classifiers and agents: 167 metrics, LLM judges, confidence intervals, paired tests, CI gates and offline HTML reports."
+# Generated from README.md by scripts/pypi_readme.py (absolute links, images served from GitHub Pages).
+readme = "README.pypi.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
@@ -22,9 +23,12 @@ keywords = [
   "quality-gates",
   "pytest",
   "ananke",
+  "statistical-significance",
+  "bootstrap",
+  "ci-cd",
 ]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
   "Intended Audience :: Science/Research",
   "License :: OSI Approved :: Apache Software License",
@@ -104,7 +108,7 @@ core-metadata-version = "2.4"
 [tool.hatch.build.targets.sdist]
 core-metadata-version = "2.4"
 # Anchored: an unanchored "src" also matches website/node_modules/*/src.
-include = ["/src", "/README.md", "/LICENSE", "/CHANGELOG.md"]
+include = ["/src", "/README.md", "/README.pypi.md", "/LICENSE", "/CHANGELOG.md"]
 
 [tool.ruff]
 line-length = 100
@@ -154,3 +158,13 @@ branch = true
 
 [tool.coverage.report]
 show_missing = true
+
+# scripts/pypi_readme.py: README.md → README.pypi.md (the PyPI long description). assets/readme/ is published on the
+# docs site at /readme/ (docs-site.yml), because PyPI shows an SVG only when it is served as image/svg+xml.
+[tool.pypi-readme]
+repo = "https://github.com/Neo-Pragnya/Guage-Kit"
+site = "https://neo-pragnya.github.io/Guage-Kit"
+src = "README.md"
+dst = "README.pypi.md"
+branch = "main"
+map = { "assets/readme/" = "readme/" }

@@ -1,4 +1,5 @@
-# docs-generate regenerates the metric reference, the API reference and the homepage terminal SVG.
+# docs-generate regenerates the metric and API references, the homepage terminal SVG, the README's generated
+# sections and its PyPI copy (README.pypi.md). The README's animated SVGs are rebuilt from assets/readme/src/.
 .PHONY: docs-generate install lint format format-check typecheck test coverage verify docs-metrics licenses build build-check \
         scan scan-dist acceptance acceptance-wheel acceptance-dist demo site publish-testpypi publish-pypi clean check-uv
 
@@ -36,6 +37,8 @@ docs-metrics docs-generate:
 	$(UV) run python scripts/gen_metric_docs.py
 	$(UV) run python scripts/gen_api_docs.py
 	python3 scripts/gen_terminal_svg.py
+	$(UV) run python scripts/readme_sections.py readme_sections.json
+	python3 scripts/pypi_readme.py
 
 # Every runtime dependency (and the optional extras) must be permissively licensed.
 licenses:
@@ -45,6 +48,9 @@ verify: lint format-check typecheck test licenses
 	$(UV) run python scripts/gen_metric_docs.py --check
 	$(UV) run python scripts/gen_api_docs.py --check
 	python3 scripts/gen_terminal_svg.py --check
+	$(UV) run python scripts/readme_sections.py readme_sections.json --check
+	python3 scripts/pypi_readme.py --check
+	python3 scripts/check_readme.py README.md --pypi README.pypi.md
 
 # ── Build and scan ─────────────────────────────────────────────────────────
 build: check-uv

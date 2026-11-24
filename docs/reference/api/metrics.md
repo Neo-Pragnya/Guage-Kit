@@ -48,7 +48,7 @@ class BoundMetric(
 ) -> None
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L262)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L265)
 
 BoundMetric(info: 'MetricInfo', name: 'str', params: 'dict[str, Any]' = <factory>, threshold: 'float | None' = None)
 
@@ -67,7 +67,7 @@ class CorpusOutput(
 ) -> None
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L255)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L258)
 
 CorpusOutput(value: 'float | None', details: 'dict[str, Any]' = <factory>, per_sample: 'dict[str, float]' = <factory>)
 
@@ -175,7 +175,7 @@ arguments are as for `metric`.
 get_metric(name: str) -> MetricInfo
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L406)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L409)
 
 The declaration (`MetricInfo`) of a registered metric. Raises `GK-METRIC-001` for unknown names,
 suggesting the closest match.
@@ -186,7 +186,7 @@ suggesting the closest match.
 list_metrics(family: str | None = None) -> list[dict[str, Any]]
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L400)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L403)
 
 Every registered metric's declaration (what `guage metrics list` prints).
 
@@ -240,7 +240,7 @@ resolve(
 ) -> BoundMetric
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L356)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/registry.py#L359)
 
 Turn `"recall@5"`, `"bleu"` or `{"name": "rouge", "params": {...}, "threshold": 0.4, "as": "x"}`
 into a bound metric, validating parameters.

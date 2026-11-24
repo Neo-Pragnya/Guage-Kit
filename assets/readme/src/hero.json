@@ -1,0 +1,18 @@
+{
+  "name": "Guage Kit",
+  "tagline": "Know how good it is, with the error bars to prove it.",
+  "description": "Metrics, LLM judges, real statistics and CI quality gates for LLMs, RAG, retrieval, classifiers and agents.",
+  "chips": ["📏 167 metrics", "⚖️ LLM judges", "📊 95% intervals", "🧪 paired tests", "🚦 CI gates", "📄 offline reports"],
+  "ring": ["text", "RAG", "retrieval", "agents", "safety", "calibration", "embeddings", "structured", "judges", "runtime", "classification", "semantic"],
+  "nodes": [
+    {"label": "", "colour": "#5eead4"}, {"label": "", "colour": "#f59e0b"}, {"label": "", "colour": "#f2643d"},
+    {"label": "", "colour": "#a78bfa"}, {"label": "", "colour": "#7dd3fc"}, {"label": "", "colour": "#0f6e66"}
+  ],
+  "core": "◔",
+  "accent": "#5eead4", "accent2": "#f59e0b",
+  "accent_light": "#0f6e66", "accent2_light": "#b45309",
+  "theme_dark": {"bg0": "#12403d", "bg1": "#0f1a1f", "bg2": "#071013", "ink": "#e6eeeb", "muted": "#9aaab0",
+                 "ring": "#24413f", "chip": "#10201f", "chipline": "#25423f", "star": "#ffffff"},
+  "theme_light": {"bg0": "#ffffff", "bg1": "#f4f6f5", "bg2": "#e2ebe8", "ink": "#0f1a1f", "muted": "#51606a",
+                  "ring": "#c5d5d1", "chip": "#ffffff", "chipline": "#d3dedb", "star": "#14b8a6"}
+}

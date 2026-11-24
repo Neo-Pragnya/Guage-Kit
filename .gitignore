@@ -49,3 +49,4 @@ website/node_modules/
 website/dist/
 website/.astro/
 website/public/demo/
+website/public/readme/

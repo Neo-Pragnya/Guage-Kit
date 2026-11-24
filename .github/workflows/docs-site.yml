@@ -46,6 +46,9 @@ jobs:
           uv sync --frozen --extra dev
           uv run --frozen guage demo -o website/public/demo
 
+      - name: Publish the README assets at /readme/ (PyPI shows SVG only from a host that serves image/svg+xml)
+        run: cp -R assets/readme website/public/readme && rm -rf website/public/readme/src
+
       - name: Build site (astro check + build)
         working-directory: website
         run: |

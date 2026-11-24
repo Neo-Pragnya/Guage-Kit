@@ -1,0 +1,8 @@
+{
+  "readme": "README.md",
+  "sections": {
+    "FAMILIES": {"python": "assets/readme/src/sections.py:families"},
+    "CLI": {"python": "assets/readme/src/sections.py:cli"},
+    "ERRORS": {"python": "assets/readme/src/sections.py:errors"}
+  }
+}

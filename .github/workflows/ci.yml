@@ -55,6 +55,9 @@ jobs:
           uv run python scripts/gen_metric_docs.py --check
           uv run python scripts/gen_api_docs.py --check
           uv run python scripts/gen_terminal_svg.py --check
+          uv run python scripts/readme_sections.py readme_sections.json --check
+          uv run python scripts/pypi_readme.py --check
+          uv run python scripts/check_readme.py README.md --pypi README.pypi.md
 
   dist-scan:
     name: build + distribution scan (what package firewalls check)
