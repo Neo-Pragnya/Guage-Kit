@@ -1,0 +1,1579 @@
+---
+title: Text metrics
+description: "Matching, overlap (BLEU, chrF, ROUGE), edit distance, numbers, length, readability and diversity."
+---
+
+# Text metrics
+
+> [!NOTE]
+> Generated from the metric registry and the metric cards (`guage_kit/metrics/cards/`). Every example
+> on this page is run by the test suite, so the numbers are what the metric really returns.
+
+Matching, overlap (BLEU, chrF, ROUGE), edit distance, numbers, length, readability and diversity.
+
+| metric | in one line |
+| --- | --- |
+| [`bleu`](#bleu) | How many of the output's word sequences (1 to 4 words long) also appear in the reference, pooled over the whole dataset, with a penalty for outputs that are too short. |
+| [`chrf`](#chrf) | How many of the output's character sequences (1 to 6 characters long) also appear in the reference, combined into a recall-weighted F-score. |
+| [`chrf_pp`](#chrf_pp) | chrF with word unigrams and bigrams added to the character n-grams, so word order and whole-word matches count as well. |
+| [`contains`](#contains) | 1 if any reference text appears anywhere inside the output (case-insensitive substring), otherwise 0. |
+| [`corpus_chrf`](#corpus_chrf) | chrF computed once over the whole dataset, by pooling character n-gram matches from every sample before computing the F-score. |
+| [`distinct_n`](#distinct_n) | The share of word n-grams (bigrams by default) across all outputs that are unique; higher means more varied, less repetitive outputs. |
+| [`exact_match`](#exact_match) | 1 if the output is exactly the same string as a reference (ignoring surrounding whitespace), otherwise 0. |
+| [`flesch_reading_ease`](#flesch_reading_ease) | A readability score from average sentence length and average syllables per word; higher means easier to read. |
+| [`jaccard`](#jaccard) | The share of distinct words used by either text that are used by both (intersection over union of word sets). |
+| [`keyword_coverage`](#keyword_coverage) | The fraction of required keywords that appear somewhere in the output. |
+| [`length_ratio`](#length_ratio) | The output's word count divided by the reference's word count; 1 means the same length. |
+| [`levenshtein_similarity`](#levenshtein_similarity) | How few single-character edits are needed to turn the output into the closest reference, as a similarity from 0 to 1. |
+| [`normalized_match`](#normalized_match) | 1 if the output equals a reference after lower-casing and removing punctuation, articles and extra spaces (SQuAD exact match), otherwise 0. |
+| [`numeric_match`](#numeric_match) | 1 if the last number in the output equals an expected number within a tolerance, otherwise 0; the standard check for math word problems. |
+| [`regex_match`](#regex_match) | 1 if the output matches a regular expression, otherwise 0. |
+| [`rouge`](#rouge) | How much of the reference's wording the output recovers, as unigram, bigram or longest-common-subsequence overlap; the configurable base of rouge1, rouge2, rougeL and rougeLsum. |
+| [`rouge1`](#rouge1) | Share of individual words the output and the reference have in common, as an F-score (ROUGE-1). |
+| [`rouge2`](#rouge2) | Share of adjacent word pairs the output and the reference have in common, as an F-score (ROUGE-2). |
+| [`rougeL`](#rougel) | Length of the longest sequence of words that appears in the same order in both output and reference, as an F-score (ROUGE-L). |
+| [`rougeLsum`](#rougelsum) | Sentence-aware ROUGE-L for multi-sentence summaries; each reference sentence is matched against every output sentence, so sentence order does not matter. |
+| [`self_bleu`](#self_bleu) | How similar the outputs are to each other, as the average BLEU of each output against all the others; lower means more diverse. |
+| [`sentence_bleu`](#sentence_bleu) | BLEU for a single output against its own references, smoothed so that a short or partly matching answer still gets a non-zero score. |
+| [`token_f1`](#token_f1) | Word-overlap F1 between the output and the best-matching reference, treating each text as a bag of words (SQuAD F1). |
+| [`within_length`](#within_length) | 1 if the output's word count is between a minimum and maximum (inclusive), otherwise 0. |
+| [`word_count`](#word_count) | The number of words in the output, with an optional check against a minimum and maximum. |
+
+## bleu
+
+*How many of the output's word sequences (1 to 4 words long) also appear in the reference, pooled over the whole dataset, with a penalty for outputs that are too short.*
+
+**Level:** corpus · **Range:** 0 to 1, higher is better · **Needs:** `output`, `expected` · **Deterministic:** yes
+
+**What it measures**
+
+Surface overlap between generated text and one or more reference texts. It answers "does the output use the same words in the same local order as the reference?" It was designed for machine translation, where many references exist and outputs are judged in aggregate, not one sentence at a time.
+
+**How it is computed**
+
+1. Tokenise outputs and references with the `13a` tokenizer (the sacreBLEU default: punctuation is split from words).
+2. For each n from 1 to `max_order`, count the output's n-grams and clip each count at the largest number of
+   times that n-gram appears in any single reference ("modified" precision, so repeating a correct word earns
+   nothing extra).
+3. Pool the clipped matches and the totals over **all samples** before dividing. That is what makes BLEU a
+   corpus metric: long samples weigh more, and one sample's zero does not zero the score.
+4. Take the geometric mean of the n-gram precisions and multiply by the brevity penalty, which punishes a
+   corpus of outputs shorter than the references (precision alone would reward saying very little).
+
+```text
+p_n  = Σ_samples Σ_ngrams min(count_out(g), max_ref count_ref(g))  /  Σ_samples Σ_ngrams count_out(g)
+BP   = 1                    if c > r
+     = exp(1 − r / c)       otherwise          (c = total output length, r = total closest reference length)
+BLEU = BP · exp( (1/N) Σ_{n=1..N} log p_n )    N = max_order
+```
+
+**Inputs:** `output` (the system's text) and `expected` or `references` (one or more reference texts; the best-matching length is used for the brevity penalty).
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `max_order` | `4` | Longest n-gram counted (default 4, as in the paper). Lower it (2 or 3) for very short outputs, where 4-grams rarely exist. |
+
+**How to read it**
+
+Reported on a 0–1 scale (sacreBLEU prints the same number × 100). Absolute values are only comparable within one dataset and tokenisation: as a rough guide for translation, above 0.3 is understandable and above 0.5 is fluent, but for free-form LLM answers BLEU is often low even for correct answers because there are many valid phrasings. Use it to compare versions of one system on one dataset, ideally with `guage compare` for a paired test.
+
+**Use it when**
+
+- Translation, transliteration, or any task with tightly constrained wording.
+- Regression testing a system whose outputs should stay close to known-good outputs.
+
+**Pitfalls**
+
+- Rewards exact wording, not meaning. A correct paraphrase can score near 0; pair it with `semantic_similarity` or a judge.
+- It is a corpus statistic. Averaging per-sample BLEU is a different number; use `sentence_bleu` for per-sample scores.
+- Without smoothing, a corpus with no matching 4-gram at all scores exactly 0.
+- Scores depend on tokenisation; compare only numbers produced the same way.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "the cat sat on the mat", "expected": "the cat sat on a mat"}
+{"output": "a quick brown fox jumps", "expected": "the quick brown fox jumps"}
+```
+
+Result: **0.5942**. Identical to sacreBLEU's corpus_bleu (59.42) on the same input.
+
+**Related:** [`sentence_bleu`](#sentence_bleu), [`chrf`](#chrf), [`rouge`](#rouge), [`self_bleu`](#self_bleu)
+
+**References**
+
+- Papineni, K., Roukos, S., Ward, T., and Zhu, W.-J. (2002). BLEU: a Method for Automatic Evaluation of Machine Translation. Proceedings of ACL 2002, pp. 311–318. <https://aclanthology.org/P02-1040/>
+- Post, M. (2018). A Call for Clarity in Reporting BLEU Scores. Proceedings of the Third Conference on Machine Translation (WMT), pp. 186–191. <https://aclanthology.org/W18-6319/>
+
+## chrf
+
+*How many of the output's character sequences (1 to 6 characters long) also appear in the reference, combined into a recall-weighted F-score.*
+
+**Level:** sample · **Range:** 0 to 1, higher is better · **Needs:** `output`, `expected` · **Deterministic:** yes
+
+**What it measures**
+
+Character-level overlap between the output and a reference. Because it works on characters rather than whole words, it gives partial credit for inflections, compounds and minor spelling differences ("connected" vs "connection"), which makes it more forgiving than BLEU and better suited to morphologically rich languages.
+
+**How it is computed**
+
+1. Remove the space characters from the output and the reference (chrF ignores word boundaries by default).
+2. For each n from 1 to `char_order`, count character n-grams in both and take the clipped overlap
+   (the multiset intersection).
+3. Optionally (when `word_order` > 0, which is chrF++) do the same for word n-grams of order 1 to `word_order`.
+   Words are split on whitespace, and a trailing non-alphanumeric character is split off as its own token
+   (`mat.` becomes `mat` and `.`).
+4. Compute precision and recall for every order where both texts have at least one n-gram (the effective
+   orders), and **average the precisions and the recalls** across those orders.
+5. Combine the averaged precision and recall into an F-beta score with `beta` = 2, so recall counts twice as
+   much as precision.
+6. With several references, score against each and keep the best.
+
+```text
+P_n = |ngrams_out ∩ ngrams_ref| / |ngrams_out|      R_n = |ngrams_out ∩ ngrams_ref| / |ngrams_ref|
+P   = mean of P_n over effective orders           R   = mean of R_n over effective orders
+chrF_β = (1 + β²) · P · R / (β² · P + R)           (β = 2 by default)
+score  = max over references of chrF_β
+```
+
+**Inputs:** `output` and `expected` and/or `references`; the best-scoring reference is used.
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `char_order` | `6` | Longest character n-gram (default 6, as in the paper and sacreBLEU). |
+| `word_order` | `0` | Longest word n-gram added to the character n-grams (default 0, plain chrF). 2 gives chrF++; see `chrf_pp`. |
+| `beta` | `2.0` | Weight of recall relative to precision (default 2). beta = 1 weighs them equally. |
+
+**How to read it**
+
+0–1 scale (sacreBLEU prints × 100). chrF is usually noticeably higher than BLEU on the same data because partial word matches earn credit; on translation tasks, values above about 0.6 typically indicate good output. As with BLEU, compare values only within one dataset and configuration. A high chrF with low BLEU often means the output has the right vocabulary in a different order or form.
+
+**Use it when**
+
+- Translation, especially into morphologically rich languages, where word-level matching is too strict.
+- Short outputs, where BLEU's 4-gram statistics are too sparse to be informative.
+- Spelling- or transliteration-sensitive tasks where near-misses deserve partial credit.
+
+**Pitfalls**
+
+- It is recall-weighted, so long outputs that contain the reference plus extra material still score well. Watch output length alongside it.
+- Character overlap is not meaning; a negated sentence ("is not available") can score close to the original.
+- The value is per sample; `corpus_chrf` pools statistics over the dataset and gives a different number from the mean of `chrf`.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "the cat sat on the mat", "expected": "the cat sat on a mat"}
+```
+
+Result: **0.7208**. Identical to sacreBLEU's sentence-level chrF (72.08) on the same input.
+
+**Related:** [`chrf_pp`](#chrf_pp), [`corpus_chrf`](#corpus_chrf), [`sentence_bleu`](#sentence_bleu), [`levenshtein_similarity`](#levenshtein_similarity)
+
+**References**
+
+- Popović, M. (2015). chrF: character n-gram F-score for automatic MT evaluation. Proceedings of the Tenth Workshop on Statistical Machine Translation, pp. 392–395. <https://aclanthology.org/W15-3049/>
+- Post, M. (2018). A Call for Clarity in Reporting BLEU Scores. Proceedings of the Third Conference on Machine Translation (WMT), pp. 186–191. <https://aclanthology.org/W18-6319/>
+
+## chrf_pp
+
+*chrF with word unigrams and bigrams added to the character n-grams, so word order and whole-word matches count as well.*
+
+**Level:** sample · **Range:** 0 to 1, higher is better · **Needs:** `output`, `expected` · **Deterministic:** yes
+
+**What it measures**
+
+The same character-level overlap as `chrf`, plus word-level overlap. The added word n-grams reward outputs that get whole words and short word sequences right, which correlates better with human judgements than characters alone in the chrF++ paper.
+
+**How it is computed**
+
+1. This is `chrf` with `word_order` fixed to 2.
+2. Character n-grams of order 1 to `char_order` are counted after removing spaces, exactly as in `chrf`.
+3. Words are taken by splitting on whitespace, splitting a trailing non-alphanumeric character off as its own
+   token; word unigrams and bigrams are counted and intersected.
+4. Precision and recall are averaged over all effective character **and** word orders (8 orders by default:
+   6 character + 2 word), then combined into an F-beta score with `beta` = 2.
+5. With several references, the best-scoring one is kept.
+
+```text
+orders = {char 1..char_order} ∪ {word 1..2}
+P = mean of P_n over effective orders        R = mean of R_n over effective orders
+chrF++ = (1 + β²) · P · R / (β² · P + R)
+```
+
+**Inputs:** `output` and `expected` and/or `references`; the best-scoring reference is used.
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `char_order` | `6` | Longest character n-gram (default 6). |
+| `beta` | `2.0` | Weight of recall relative to precision (default 2). |
+| `word_order` | `2` |  |
+
+**How to read it**
+
+0–1 scale, usually a little below plain chrF on the same data because word bigrams are harder to match than character n-grams. Read it like `chrf`: compare versions on one dataset; a gap between chrF and chrF++ that widens means the output has the right characters but in less fluent word sequences.
+
+**Use it when**
+
+- Translation evaluation where you want character-level robustness plus some sensitivity to word choice and order.
+- As a default single overlap metric for multilingual generation.
+
+**Pitfalls**
+
+- Recall-weighted, so verbose outputs are not penalised much.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "the cat sat on the mat", "expected": "the cat sat on a mat"}
+```
+
+Result: **0.7203**. Identical to sacreBLEU's chrF++ (CHRF with word_order=2, 72.03) on this input.
+
+**Related:** [`chrf`](#chrf), [`corpus_chrf`](#corpus_chrf), [`sentence_bleu`](#sentence_bleu)
+
+**References**
+
+- Popović, M. (2017). chrF++: words helping character n-grams. Proceedings of the Second Conference on Machine Translation (WMT), pp. 612–618. <https://aclanthology.org/W17-4770/>
+- Popović, M. (2015). chrF: character n-gram F-score for automatic MT evaluation. Proceedings of the Tenth Workshop on Statistical Machine Translation, pp. 392–395. <https://aclanthology.org/W15-3049/>
+
+## contains
+
+*1 if any reference text appears anywhere inside the output (case-insensitive substring), otherwise 0.*
+
+**Level:** sample · **Range:** 0 to 1, higher is better · **Needs:** `output`, `expected` · **Deterministic:** yes
+
+**What it measures**
+
+Whether the output includes the expected answer, wherever it is and whatever surrounds it. This is the natural check for chatty LLM answers that embed a short correct answer in a sentence.
+
+**How it is computed**
+
+1. Lower-case the output and each reference (unless `case_sensitive` is true).
+2. Strip whitespace from each reference; empty references are ignored.
+3. Return 1.0 if any reference is a substring of the output, else 0.0. Matching is plain substring search: no
+   word boundaries, no punctuation or Unicode normalisation.
+
+```text
+score = 1 if ∃ ref ≠ "": strip(ref) ⊆ output    (after lower-casing both, by default)
+      = 0 otherwise
+```
+
+**Inputs:** `output` and `expected` and/or `references` (any reference may match).
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `case_sensitive` | `False` | Compare case-sensitively (default false). |
+
+**How to read it**
+
+Binary per sample; the mean is the share of outputs that mention an accepted answer. It is an upper bound on correctness: it cannot tell a correct answer from one that mentions the right answer while rejecting it.
+
+**Use it when**
+
+- Short factual answers embedded in longer free-form responses.
+- Checking that a required phrase, name or code appears in the output.
+
+**Pitfalls**
+
+- No word boundaries: the reference "no" is found inside "not" and "know", and "4" inside "14". Keep references distinctive, or use `regex_match` with `\b` boundaries.
+- It does not understand negation or hedging: "It is not Paris" contains "paris".
+- Lists of many candidate answers ("Paris, London or Rome") score 1; long outputs are favoured.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "The capital of France is Paris.", "expected": "paris"}
+```
+
+Result: **1**
+
+**Related:** [`exact_match`](#exact_match), [`normalized_match`](#normalized_match), [`keyword_coverage`](#keyword_coverage), [`regex_match`](#regex_match)
+
+## corpus_chrf
+
+*chrF computed once over the whole dataset, by pooling character n-gram matches from every sample before computing the F-score.*
+
+**Level:** corpus · **Range:** 0 to 1, higher is better · **Needs:** `output`, `expected` · **Deterministic:** yes
+
+**What it measures**
+
+Dataset-level character n-gram overlap between outputs and references. It is the number translation papers usually report as "chrF", and the chrF counterpart of corpus `bleu`.
+
+**How it is computed**
+
+1. For every sample, compute the same per-order statistics as `chrf` (matches, output n-grams, reference n-grams)
+   against the sample's **first** reference only.
+2. Sum those statistics over all samples, order by order.
+3. From the pooled counts compute per-order precision and recall, average them over the effective orders, and
+   combine into an F-beta score.
+
+```text
+M_n = Σ_samples matches_n     H_n = Σ_samples |ngrams_out,n|     F_n = Σ_samples |ngrams_ref,n|
+P = mean_n (M_n / H_n)        R = mean_n (M_n / F_n)             (over orders with H_n > 0 and F_n > 0)
+corpus_chrF = (1 + β²) · P · R / (β² · P + R)
+```
+
+**Inputs:** `output` and the first text of `expected`/`references` for every sample.
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `char_order` | `6` | Longest character n-gram (default 6). |
+| `word_order` | `0` | Longest word n-gram (default 0; 2 gives corpus chrF++). |
+| `beta` | `2.0` | Weight of recall relative to precision (default 2). |
+
+**How to read it**
+
+0–1 scale (sacreBLEU prints × 100). Longer samples contribute more n-grams and so weigh more than in the mean of per-sample `chrf`. Use it as the headline number for a translation-style dataset and compare it only across systems scored on the same data and configuration.
+
+**Use it when**
+
+- Reporting a single dataset-level chrF, comparable with published sacreBLEU chrF numbers (single reference).
+- Datasets with many short samples, where per-sample chrF is noisy.
+
+**Pitfalls**
+
+- Being a corpus statistic, it gives no per-sample scores and cannot be used directly in a paired test; use `chrf` for that.
+- Shares chrF's whitespace and word-splitting caveats.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "the cat sat on the mat", "expected": "the cat sat on a mat"}
+{"output": "a quick brown fox jumps", "expected": "the quick brown fox jumps"}
+```
+
+Result: **0.8003**. Identical to sacreBLEU's corpus chrF (80.03) on the same input.
+
+**Related:** [`chrf`](#chrf), [`chrf_pp`](#chrf_pp), [`bleu`](#bleu)
+
+**References**
+
+- Popović, M. (2015). chrF: character n-gram F-score for automatic MT evaluation. Proceedings of the Tenth Workshop on Statistical Machine Translation, pp. 392–395. <https://aclanthology.org/W15-3049/>
+- Post, M. (2018). A Call for Clarity in Reporting BLEU Scores. Proceedings of the Third Conference on Machine Translation (WMT), pp. 186–191. <https://aclanthology.org/W18-6319/>
+
+## distinct_n
+
+*The share of word n-grams (bigrams by default) across all outputs that are unique; higher means more varied, less repetitive outputs.*
+
+**Level:** corpus · **Range:** 0 to 1, higher is better · **Needs:** `output` · **Deterministic:** yes
+
+**What it measures**
+
+Lexical diversity of a set of generations. Low values mean the model keeps reusing the same phrases (generic "I don't know" replies, templated openings); high values mean varied wording. It needs no reference.
+
+**How it is computed**
+
+1. Tokenise each output (Unicode NFKC, lower-case, `\w+` runs with internal hyphens and apostrophes).
+2. Collect the word n-grams of length `k` from every output into one pool (n-grams do not cross sample
+   boundaries).
+3. Divide the number of distinct n-grams by the total number of n-grams. No n-grams at all gives 0.
+
+```text
+distinct-k = |unique k-grams over all outputs| / |all k-grams over all outputs|
+```
+
+**Inputs:** `output` of every sample (corpus-level).
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `k` | `2` | N-gram length (default 2). `distinct_n@1` sets k = 1 (distinct unigrams). |
+
+**How to read it**
+
+0–1 over the dataset. Compare only between sets of equal size and similar length: the value falls naturally as more text is pooled, because common n-grams recur. A drop between two model versions on the same inputs is a reliable sign of more repetitive or generic output.
+
+**Use it when**
+
+- Dialogue and open-ended generation, to detect generic or repetitive responses.
+- Checking that sampling settings (temperature, top-p) or a fine-tune did not collapse diversity.
+
+**Pitfalls**
+
+- The denominator is the number of n-grams, not the number of words as in Li et al. (2016); for k = 1 they are the same, for k ≥ 2 values here are slightly higher than the paper's definition.
+- Sensitive to corpus size and output length; never compare a 100-sample run with a 1,000-sample run.
+- Diversity is not quality; random text maximises it. Pair with a quality or relevance metric.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "I don't know."}
+{"output": "I don't know what you mean."}
+{"output": "Let me check the schedule."}
+```
+
+Result: **0.8182**. 11 bigrams in total, of which "i don't" and "don't know" repeat, leaving 9 unique.
+
+**Related:** [`self_bleu`](#self_bleu), [`word_count`](#word_count)
+
+**References**
+
+- Li, J., Galley, M., Brockett, C., Gao, J., and Dolan, B. (2016). A Diversity-Promoting Objective Function for Neural Conversation Models. Proceedings of NAACL-HLT 2016, pp. 110–119. <https://aclanthology.org/N16-1014/>
+
+## exact_match
+
+*1 if the output is exactly the same string as a reference (ignoring surrounding whitespace), otherwise 0.*
+
+**Level:** sample · **Range:** 0 to 1, higher is better · **Needs:** `output`, `expected` · **Deterministic:** yes
+
+**What it measures**
+
+Strict string identity with an accepted answer. It answers "did the model produce precisely this text?", which suits closed-form answers (labels, codes, single tokens) where any difference is an error.
+
+**How it is computed**
+
+1. Strip leading and trailing whitespace from the output and each reference (unless `strip` is false).
+2. Compare the output with each reference as strings, case-sensitively by default (`case_sensitive=false`
+   lower-cases both sides first).
+3. Return 1.0 if any reference is equal, else 0.0. No punctuation, article or Unicode normalisation is applied:
+   unlike SQuAD's "exact match", this is a raw comparison (use `normalized_match` for the SQuAD behaviour).
+
+```text
+EM = 1  if ∃ ref: norm(output) == norm(ref)    else 0
+norm = strip (optional) then lower-case (when case_sensitive is false)
+```
+
+**Inputs:** `output` and `expected` and/or `references` (any reference may match).
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `strip` | `True` | Strip leading and trailing whitespace before comparing (default true). |
+| `case_sensitive` | `True` | Compare case-sensitively (default true). Set false to treat "Paris" and "paris" as equal. |
+
+**How to read it**
+
+Binary per sample; the dataset mean is the share of outputs that were exactly right. Because it is so strict, a low exact-match rate with high `normalized_match` or `token_f1` usually indicates formatting differences (capitalisation, trailing full stop, extra words) rather than wrong answers.
+
+**Use it when**
+
+- Classification-style outputs, multiple-choice letters, IDs, codes, or canonical single-token answers.
+- When the output format is itself part of what is being tested.
+
+**Pitfalls**
+
+- A trailing full stop, a different capitalisation or a polite preamble ("The answer is Paris") all score 0. Normalise the output upstream, or use `normalized_match`, `contains` or `numeric_match`.
+- Case-sensitive by default; this differs from SQuAD's exact match, which normalises case, punctuation and articles.
+- Unicode look-alikes (non-breaking spaces, curly quotes) count as differences.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "Paris ", "expected": "paris"}
+```
+
+Result: **0**. Whitespace is stripped, but the comparison is case-sensitive by default; with case_sensitive false this scores 1.
+
+**Related:** [`normalized_match`](#normalized_match), [`contains`](#contains), [`token_f1`](#token_f1), [`numeric_match`](#numeric_match)
+
+## flesch_reading_ease
+
+*A readability score from average sentence length and average syllables per word; higher means easier to read.*
+
+**Level:** sample · **Range:** −∞ to 121.22, higher is better · **Needs:** `output` · **Deterministic:** yes
+
+**What it measures**
+
+How easy English prose is to read, by Flesch's 1948 formula: shorter sentences and shorter words read more easily. It requires no reference.
+
+**How it is computed**
+
+1. Tokenise the output into words (Unicode NFKC, lower-case, `\w+` runs with internal hyphens and apostrophes).
+   An output with no words gives NaN.
+2. Count sentences with the built-in rule-based splitter (a break after `.`, `!` or `?` followed by whitespace
+   and an upper-case letter or digit); at least 1.
+3. Estimate syllables per word heuristically: count groups of consecutive vowels (`a e i o u y`), subtract one
+   for a final silent "e" (but not "-le"), minimum 1. No pronunciation dictionary is used.
+4. Apply Flesch's formula.
+
+```text
+FRE = 206.835 − 1.015 · (words / sentences) − 84.6 · (syllables / words)
+```
+
+**Inputs:** `output` only (English prose).
+
+**How to read it**
+
+Flesch's bands: 90–100 very easy (about age 11), 60–70 plain English (age 13–15), 30–50 difficult (college), below 30 very difficult (graduate level). The maximum is 121.22 (one sentence of one-syllable words); there is no minimum, and dense technical text can go negative.
+
+**Use it when**
+
+- Checking that customer-facing or patient-facing text stays plain.
+- Comparing the reading level of outputs across prompts or models (for example "explain like I'm five" prompts).
+
+**Pitfalls**
+
+- English only; the constants and the syllable heuristic are meaningless for other languages.
+- The syllable count is a heuristic and miscounts some words ("queue", acronyms, numbers each count as 1).
+- Lists, code and bullet points without full stops count as one long sentence, which drives the score down sharply.
+- Readability is not clarity or correctness; short words in short sentences can still be wrong or confusing.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "The cat sat on the mat. It was a very happy cat."}
+```
+
+Result: **102.045**
+
+**Related:** [`word_count`](#word_count), [`within_length`](#within_length)
+
+**References**
+
+- Flesch, R. (1948). A new readability yardstick. Journal of Applied Psychology, 32(3), pp. 221–233. <https://doi.org/10.1037/h0057532>
+
+## jaccard
+
+*The share of distinct words used by either text that are used by both (intersection over union of word sets).*
+
+**Level:** sample · **Range:** 0 to 1, higher is better · **Needs:** `output`, `expected` · **Deterministic:** yes
+
+**What it measures**
+
+Vocabulary overlap between output and reference, ignoring order and repetition. It is symmetric: it does not distinguish missing words from extra words.
+
+**How it is computed**
+
+1. Tokenise output and each reference: Unicode NFKC normalisation, lower-case, word tokens (`\w+` runs, keeping
+   internal hyphens and apostrophes; punctuation is dropped).
+2. Turn each token list into a set (duplicates count once).
+3. Score |A ∩ B| / |A ∪ B| against each reference; two empty texts score 1.
+4. Keep the highest score over references.
+
+```text
+J(A, B) = |A ∩ B| / |A ∪ B|          A, B = sets of lower-cased word tokens
+score = max over references of J
+```
+
+**Inputs:** `output` and `expected` and/or `references`.
+
+**How to read it**
+
+0–1; it is always at most the token F1 of the same pair, because every unmatched word counts against it on either side. Values above about 0.6 indicate largely the same vocabulary.
+
+**Use it when**
+
+- Comparing keyword sets, tags or short lists where order and repetition do not matter.
+- Quick near-duplicate detection between outputs and references.
+
+**Pitfalls**
+
+- Set-based, so repeated words and word order are ignored entirely.
+- Stop words ("the", "of") count as much as content words and inflate overlap between unrelated sentences.
+- No stemming ("mat" vs "mats" are different words).
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "the cat sat on the mat", "expected": "a cat sat on the red mat"}
+```
+
+Result: **0.7143**. 5 shared words out of 7 distinct words in total.
+
+**Related:** [`token_f1`](#token_f1), [`rouge1`](#rouge1), [`levenshtein_similarity`](#levenshtein_similarity)
+
+**References**
+
+- Jaccard, P. (1912). The distribution of the flora in the alpine zone. New Phytologist, 11(2), pp. 37–50. <https://doi.org/10.1111/j.1469-8137.1912.tb05611.x>
+
+## keyword_coverage
+
+*The fraction of required keywords that appear somewhere in the output.*
+
+**Level:** sample · **Range:** 0 to 1, higher is better · **Needs:** `output` · **Deterministic:** yes
+
+**What it measures**
+
+Coverage of must-mention terms: whether an answer includes the facts, names or phrases a good answer has to contain. Keywords are per sample (in metadata) or fixed for the whole run (as a parameter).
+
+**How it is computed**
+
+1. Take the keyword list from the `keywords` parameter or, if that is empty, from `metadata.keywords` of the
+   sample. If there are no keywords the sample is skipped (no score).
+2. Lower-case the output and each keyword and test each keyword as a substring of the output.
+3. Return the share of keywords found; the details list the missing ones.
+
+```text
+coverage = |{k ∈ keywords : lower(k) ⊆ lower(output)}| / |keywords|
+```
+
+**Inputs:** `output`, plus `metadata.keywords` (a list of strings) when the `keywords` parameter is not set.
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `keywords` | `[]` | Keywords required in every output (default empty, which means use each sample's `metadata.keywords`). When set, it overrides the metadata. |
+
+**How to read it**
+
+0–1 per sample: 1 means every keyword was mentioned. The `missing` list in the details is usually more useful than the number itself, because it shows exactly which facts were left out.
+
+**Use it when**
+
+- Checking that answers mention required entities, steps, disclaimers or product names.
+- Rubric-like evaluation where a few terms stand in for the required content.
+
+**Pitfalls**
+
+- Substring matching: "cat" is found in "category" and "refund" in "non-refundable". Choose keywords that are hard to match by accident.
+- Mentioning a keyword is not stating it correctly ("no refund is possible" covers "refund").
+- Synonyms and inflections are not matched: "30 days" does not match "thirty days" or "30-day". List variants separately, or use a judge.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "You can get a refund within 30 days.", "metadata": {"keywords": ["refund", "30 days", "receipt"]}}
+```
+
+Result: **0.6667**. "receipt" is missing and reported in the details.
+
+**Related:** [`contains`](#contains), [`regex_match`](#regex_match), [`rouge1`](#rouge1)
+
+## length_ratio
+
+*The output's word count divided by the reference's word count; 1 means the same length.*
+
+**Level:** sample · **Range:** 0 to ∞, lower is better · **Needs:** `output`, `expected` · **Deterministic:** yes
+
+**What it measures**
+
+Whether outputs are systematically longer or shorter than the references. It is a diagnostic for verbosity or truncation, not a quality score.
+
+**How it is computed**
+
+1. Count word tokens in the output (Unicode NFKC, lower-case, `\w+` runs with internal hyphens and apostrophes).
+2. Count word tokens in each reference and take the **longest** reference.
+3. Return output words / reference words. If the reference has no words the result is NaN.
+
+```text
+length_ratio = |tokens(output)| / max over references |tokens(ref)|
+```
+
+**Inputs:** `output` and `expected` and/or `references`.
+
+**How to read it**
+
+Around 1 means outputs are as long as references; 2 means twice as long; 0.5 half. Look at the distribution (or mean and spread) across the dataset: a mean far above 1 indicates verbosity that may depress precision-type metrics, far below 1 indicates truncation or terse answers that depress recall-type metrics.
+
+**Use it when**
+
+- Diagnosing why BLEU, ROUGE or token F1 moved between two system versions.
+- Monitoring verbosity drift, for example after a prompt change.
+
+**Pitfalls**
+
+- The metric is declared lower-is-better, which only makes sense when you use it as a cap on verbosity: in comparisons a truncated output (0.2) looks "better" than a well-sized one (1.0). Read it as a diagnostic, or set a threshold band.
+- With several references the longest is used, not the closest in length, so the ratio is biased downwards.
+- Word counts ignore punctuation and treat languages without spaces (Chinese, Japanese) as very few words.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "The meeting moved to Thursday at noon.", "expected": "Meeting moved to Thursday."}
+```
+
+Result: **1.75**
+
+**Related:** [`word_count`](#word_count), [`within_length`](#within_length), [`bleu`](#bleu)
+
+## levenshtein_similarity
+
+*How few single-character edits are needed to turn the output into the closest reference, as a similarity from 0 to 1.*
+
+**Level:** sample · **Range:** 0 to 1, higher is better · **Needs:** `output`, `expected` · **Deterministic:** yes
+
+**What it measures**
+
+Character-level closeness of two strings: 1 minus the edit distance (insertions, deletions and substitutions) divided by the length of the longer string. It suits short strings where small typos should cost a little rather than everything.
+
+**How it is computed**
+
+1. Strip leading and trailing whitespace from the output and each reference.
+2. Compute the Levenshtein distance (unit cost for each insertion, deletion and substitution) between the
+   output and each reference, character by character (Unicode code points, case-sensitive).
+3. Divide by the length of the longer of the two strings and subtract from 1. Two empty strings score 1.
+4. Keep the highest similarity over references.
+
+```text
+sim(out, ref) = 1 − lev(out, ref) / max(|out|, |ref|)
+score = max over references of sim
+```
+
+**Inputs:** `output` and `expected` and/or `references`.
+
+**How to read it**
+
+0–1: 1 is identical, 0.9 is about one edit in ten characters. For short identifiers or names, values above about 0.85 usually indicate a typo-level difference; for sentences the number falls quickly with any rewording and says little about meaning.
+
+**Use it when**
+
+- Names, codes, transliterations, OCR or spelling tasks where near-misses deserve partial credit.
+- Tolerant matching of short structured strings (SKU, address lines).
+
+**Pitfalls**
+
+- Case-sensitive and punctuation-sensitive ("Paris" vs "paris" is one edit).
+- A transposition ("teh") costs two edits, not one.
+- Not meaningful for long or free-form text, where any paraphrase looks like many edits; the quadratic algorithm is also slow on very long strings.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "kitten", "expected": "sitting"}
+```
+
+Result: **0.5714**. The classic example, distance 3 over length 7.
+
+**Related:** [`exact_match`](#exact_match), [`chrf`](#chrf), [`jaccard`](#jaccard)
+
+**References**
+
+- Levenshtein, V. I. (1966). Binary codes capable of correcting deletions, insertions, and reversals. Soviet Physics Doklady, 10(8), pp. 707–710.
+- Wagner, R. A., and Fischer, M. J. (1974). The String-to-String Correction Problem. Journal of the ACM, 21(1), pp. 168–173. <https://doi.org/10.1145/321796.321811>
+
+## normalized_match
+
+*1 if the output equals a reference after lower-casing and removing punctuation, articles and extra spaces (SQuAD exact match), otherwise 0.*
+
+**Level:** sample · **Range:** 0 to 1, higher is better · **Needs:** `output`, `expected` · **Deterministic:** yes
+
+**What it measures**
+
+Whether the output is the reference answer up to trivial formatting. This is the "exact match" of the SQuAD reading-comprehension benchmark: it forgives case, punctuation, "a/an/the" and spacing, but nothing else.
+
+**How it is computed**
+
+1. Normalise output and each reference: Unicode NFKC normalisation, lower-case, delete every ASCII punctuation
+   character plus curly quotes, en/em dashes and the ellipsis character, replace the words "a", "an", "the"
+   with spaces, and collapse whitespace.
+2. Return 1.0 if the normalised output equals any normalised reference, else 0.0.
+
+```text
+normalize(s) = collapse_ws( remove_articles( remove_punct( lower( NFKC(s) ) ) ) )
+score = 1 if ∃ ref: normalize(output) == normalize(ref) else 0
+```
+
+**Inputs:** `output` and `expected` and/or `references` (any reference may match).
+
+**How to read it**
+
+Binary per sample; the dataset mean is the normalised exact-match rate as reported for SQuAD-style QA. Pair it with `token_f1`: the gap between the two shows how often answers are partially right.
+
+**Use it when**
+
+- Extractive or short-answer QA with gold answer strings (SQuAD, TriviaQA, Natural Questions style).
+- Any short answer where formatting noise should not count as an error.
+
+**Pitfalls**
+
+- Punctuation is deleted, not replaced by a space, so "well-known" becomes "wellknown" and "3.5" becomes "35" on both sides; that is the SQuAD behaviour but can make different numbers equal ("3.5" vs "35").
+- Any extra word fails the match; verbose LLM answers ("It is Paris.") score 0. Use `contains` or `token_f1` for those.
+- English-specific (only English articles are removed).
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "The Eiffel Tower!", "expected": "eiffel tower"}
+```
+
+Result: **1**
+
+**Related:** [`exact_match`](#exact_match), [`token_f1`](#token_f1), [`contains`](#contains)
+
+**References**
+
+- Rajpurkar, P., Zhang, J., Lopyrev, K., and Liang, P. (2016). SQuAD: 100,000+ Questions for Machine Comprehension of Text. Proceedings of EMNLP 2016, pp. 2383–2392. <https://aclanthology.org/D16-1264/>
+
+## numeric_match
+
+*1 if the last number in the output equals an expected number within a tolerance, otherwise 0; the standard check for math word problems.*
+
+**Level:** sample · **Range:** 0 to 1, higher is better · **Needs:** `output`, `expected` · **Deterministic:** yes
+
+**What it measures**
+
+Whether the model's final numeric answer is right, regardless of the working shown before it or the formatting around it ("The answer is $1,200." vs "1200").
+
+**How it is computed**
+
+1. Extract numbers from the output with a pattern that accepts a sign, thousands separators (commas, which are
+   removed), a decimal part and an exponent (`-1,234.5e3`).
+2. Extract every number from **every** reference. If the references contain no number the sample is skipped.
+3. If the output contains no number, score 0.
+4. Take the output's last number (or its first, with `last=false`).
+5. Score 1.0 if it is close to **any** reference number (`math.isclose` with `rel_tol` and `abs_tol`), else
+   0.0. The details report the number found and the first expected number.
+
+```text
+x = last(numbers(output))          (first if last = false)
+W = ∪_ref numbers(ref)
+score = 1 if ∃ w ∈ W: |x − w| ≤ max(rel_tol · max(|x|, |w|), abs_tol)    else 0
+```
+
+**Inputs:** `output` and `expected` and/or `references`; references should contain only the final answer.
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `rel_tol` | `1e-06` | Relative tolerance (default 1e-6). Raise it (e.g. 0.01) for answers rounded to a few significant figures. |
+| `abs_tol` | `1e-09` | Absolute tolerance (default 1e-9), which matters when the expected value is 0. |
+| `last` | `True` | Use the last number in the output (default true, since chain-of-thought answers end with the result); false uses the first. |
+
+**How to read it**
+
+Binary per sample; the mean is answer accuracy as reported for math benchmarks. Check the `found` value in the details of failures: many "wrong" answers are extraction failures (a trailing step number, a unit, a date).
+
+**Use it when**
+
+- Math word problems and arithmetic (GSM8K-style), unit conversions, numeric extraction from documents.
+- Any task with a single numeric answer and free-form reasoning before it.
+
+**Pitfalls**
+
+- Every number in every reference counts as acceptable. If the reference is a full worked solution (as in GSM8K's "… 4 * 6 = 24 #### 24"), an output ending in an intermediate value such as 4 or 6 scores 1. Put only the final answer in `expected`.
+- A hyphen directly before digits starts a negative number, so a date "2024-01-05" yields 2024, −1 and −5. Commas count as thousands separators only in groups of three ("1,234" is 1234; "1,2,3" is three numbers).
+- The last number may not be the answer: "The answer is 12 (see step 3)" yields 3. Prompt for a fixed final-answer format.
+- Fractions and percentages are not interpreted ("1/2" is 1 and 2, "50%" is 50, not 0.5).
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "12 / 3 = 4 boxes, and 4 + 3 = 7. The answer is 7.", "expected": "7"}
+```
+
+Result: **1**
+
+**Related:** [`exact_match`](#exact_match), [`contains`](#contains), [`regex_match`](#regex_match)
+
+**References**
+
+- Cobbe, K., Kosaraju, V., Bavarian, M., Chen, M., Jun, H., Kaiser, L., Plappert, M., Tworek, J., Hilton, J., Nakano, R., Hesse, C., and Schulman, J. (2021). Training Verifiers to Solve Math Word Problems. arXiv:2110.14168. <https://arxiv.org/abs/2110.14168>
+
+## regex_match
+
+*1 if the output matches a regular expression, otherwise 0.*
+
+**Level:** sample · **Range:** 0 to 1, higher is better · **Needs:** `output` · **Deterministic:** yes
+
+**What it measures**
+
+Whether the output has a required shape or contains a required pattern: an ID format, a date, a final-answer marker such as "Answer: X", a code fence, and so on.
+
+**How it is computed**
+
+1. Take the pattern from the `pattern` parameter or, if empty, from `metadata.pattern`. If neither is set the
+   sample is skipped (no score).
+2. Strip leading and trailing whitespace from the output.
+3. Match with Python's `re` module in DOTALL mode (`.` also matches newlines): `re.search` by default (the
+   pattern may match anywhere), `re.fullmatch` when `full` is true (the whole output must match).
+4. Return 1.0 on a match, else 0.0.
+
+```text
+score = 1 if re.search(pattern, strip(output), DOTALL)       (full = false)
+      = 1 if re.fullmatch(pattern, strip(output), DOTALL)    (full = true)
+      = 0 otherwise
+```
+
+**Inputs:** `output`, plus `metadata.pattern` when the `pattern` parameter is not set.
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `pattern` | `''` | Regular expression (Python syntax) applied to every sample (default empty, which means use `metadata.pattern`). |
+| `full` | `False` | Require the whole stripped output to match (default false, which means a match anywhere is enough). |
+
+**How to read it**
+
+Binary per sample; the mean is the share of outputs in the required format. It checks form, not correctness, so pair it with a content metric.
+
+**Use it when**
+
+- Format compliance (IDs, dates, phone numbers, "Final answer:" markers, a single letter for multiple choice).
+- Guarding against forbidden output shapes (match the bad pattern and look for low values, or invert in a threshold).
+
+**Pitfalls**
+
+- Without `full: true`, `\d{5}` matches any five digits inside a longer number; anchor patterns or use `full`.
+- Matching is case-sensitive unless the pattern includes `(?i)`.
+- In YAML configs, backslashes in double-quoted strings are escapes; write patterns in single quotes (`'\d+'`).
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "Order ID: AB-12345", "metadata": {"pattern": "[A-Z]{2}-\\d{5}"}}
+```
+
+Result: **1**
+
+**Related:** [`contains`](#contains), [`keyword_coverage`](#keyword_coverage), [`exact_match`](#exact_match)
+
+## rouge
+
+*How much of the reference's wording the output recovers, as unigram, bigram or longest-common-subsequence overlap; the configurable base of rouge1, rouge2, rougeL and rougeLsum.*
+
+**Level:** sample · **Range:** 0 to 1, higher is better · **Needs:** `output`, `expected` · **Deterministic:** yes
+
+**What it measures**
+
+Word overlap between an output and a reference, traditionally used for summarisation. ROUGE-N counts shared n-grams; ROUGE-L uses the longest common subsequence (in-order but not necessarily contiguous words), which rewards keeping the reference's word order without requiring exact phrases.
+
+**How it is computed**
+
+1. Tokenise both texts. The `default` tokenizer matches the reference ROUGE tokeniser in rouge-score: lower-case,
+   replace every character outside `a-z0-9` with a space, split. `unicode` instead keeps word characters of any
+   script (`\w+`, with internal hyphens and apostrophes). No stemming and no stop-word removal is applied.
+2. Score according to `variant`:
+   - `rougeN` (any digit N, e.g. `rouge1`, `rouge2`): clipped overlap of the two n-gram multisets.
+   - `rougeL`: length of the longest common subsequence of the two token lists.
+   - `rougeLsum`: summary-level LCS over sentences (see `rougeLsum`).
+3. Precision = overlap / output length, recall = overlap / reference length, F = their harmonic mean (β = 1).
+4. With several references, the reference with the highest F is chosen and the requested `measure` of that
+   reference is returned. Precision, recall and F all appear in the details.
+
+```text
+ROUGE-N:  overlap = Σ_g min(count_out(g), count_ref(g))      over n-grams g
+ROUGE-L:  overlap = LCS(out_tokens, ref_tokens)
+P = overlap / |out|     R = overlap / |ref|     F = 2 · P · R / (P + R)
+score = measure of argmax_ref F
+```
+
+**Inputs:** `output` and `expected` and/or `references`.
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `variant` | `'rougeL'` | Which ROUGE: `rougeL` (default), `rouge1`, `rouge2`, any `rougeN`, or `rougeLsum`. An unknown name raises an error. |
+| `measure` | `'f'` | `f` (default), `p`/`precision`, or `r`/`recall`. Any other value silently returns F. |
+| `tokenizer` | `'default'` | `default` (the reference ASCII tokeniser; drops non-ASCII letters) or `unicode` (keeps words in any script). Any other value behaves like `default`. |
+
+**How to read it**
+
+0–1 scale (often printed × 100). For abstractive summarisation of news, ROUGE-1 F around 0.4, ROUGE-2 around 0.2 and ROUGE-L around 0.3–0.4 are typical of competent systems; values for LLM answers vary widely with reference style. Recall tells you how much of the reference content was covered; precision how much of the output was on-reference. Compare only within one dataset and tokenizer.
+
+**Use it when**
+
+- Summarisation and other tasks where covering the reference's content matters more than exact phrasing.
+- Recall-oriented checks (`measure=recall`) such as "did the answer mention what the reference mentions?"
+
+**Pitfalls**
+
+- The default tokenizer drops every non-ASCII character, so text in Hindi, Chinese, Russian and so on scores 0 or near 0. Use `tokenizer: unicode` for non-English text.
+- No stemming is applied ("cats" ≠ "cat"). Published ROUGE numbers often use Porter stemming, which gives higher scores, so they are not directly comparable.
+- Rewards lexical overlap, not faithfulness; a summary can score well while contradicting the source. Pair with `faithfulness` for summaries.
+- A typo in `measure` silently returns F.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "the cat was found under the bed", "expected": "the cat was under the bed"}
+```
+
+```yaml
+metrics:
+- name: rouge
+  params:
+    variant: rouge2
+    measure: recall
+```
+
+Result: **0.8**. Matches rouge-score (rouge2 recall 0.8; precision 0.6667, F 0.7273).
+
+**Related:** [`rouge1`](#rouge1), [`rouge2`](#rouge2), [`rougeL`](#rougel), [`rougeLsum`](#rougelsum), [`token_f1`](#token_f1), [`bleu`](#bleu)
+
+**References**
+
+- Lin, C.-Y. (2004). ROUGE: A Package for Automatic Evaluation of Summaries. Text Summarization Branches Out (ACL 2004 Workshop), pp. 74–81. <https://aclanthology.org/W04-1013/>
+
+## rouge1
+
+*Share of individual words the output and the reference have in common, as an F-score (ROUGE-1).*
+
+**Level:** sample · **Range:** 0 to 1, higher is better · **Needs:** `output`, `expected` · **Deterministic:** yes
+
+**What it measures**
+
+Unigram overlap: whether the output uses the same words as the reference, regardless of order. It is the most lenient ROUGE variant and mostly measures content (vocabulary) coverage.
+
+**How it is computed**
+
+1. `rouge` with `variant=rouge1`.
+2. Tokenise both texts (default: lower-case, keep only `a-z0-9` runs; no stemming).
+3. Count the clipped overlap of the two word multisets (a word repeated twice in the output matches at most as
+   many times as it appears in the reference).
+4. Precision = overlap / output words, recall = overlap / reference words, F = harmonic mean.
+5. With several references, keep the one with the highest F.
+
+```text
+overlap = Σ_w min(count_out(w), count_ref(w))
+P = overlap / |out|    R = overlap / |ref|    ROUGE-1 = 2PR / (P + R)
+```
+
+**Inputs:** `output` and `expected` and/or `references`.
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `measure` | `'f'` | `f` (default), `p`/`precision`, or `r`/`recall`. |
+| `tokenizer` | `'default'` | `default` (reference ASCII tokeniser) or `unicode` (keeps any script). |
+| `variant` | `'rouge1'` |  |
+
+**How to read it**
+
+0–1. Because word order is ignored, ROUGE-1 is always at least as high as ROUGE-2 and usually close to or above ROUGE-L. High ROUGE-1 with low ROUGE-2 means the right words appear but rarely in the reference's phrasing.
+
+**Use it when**
+
+- Checking content coverage of summaries or answers against a reference.
+- Short outputs, where bigram statistics are too sparse.
+
+**Pitfalls**
+
+- Order-blind, so a scrambled sentence scores as high as the original.
+- Common function words ("the", "of") inflate scores; there is no stop-word removal.
+- {'Non-ASCII text scores near 0 with the default tokenizer; set `tokenizer': 'unicode`.'}
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "the cat was found under the bed", "expected": "the cat was under the bed"}
+```
+
+Result: **0.9231**. Matches rouge-score's rouge1 F-measure (precision 0.8571, recall 1.0).
+
+**Related:** [`rouge`](#rouge), [`rouge2`](#rouge2), [`rougeL`](#rougel), [`token_f1`](#token_f1)
+
+**References**
+
+- Lin, C.-Y. (2004). ROUGE: A Package for Automatic Evaluation of Summaries. Text Summarization Branches Out (ACL 2004 Workshop), pp. 74–81. <https://aclanthology.org/W04-1013/>
+
+## rouge2
+
+*Share of adjacent word pairs the output and the reference have in common, as an F-score (ROUGE-2).*
+
+**Level:** sample · **Range:** 0 to 1, higher is better · **Needs:** `output`, `expected` · **Deterministic:** yes
+
+**What it measures**
+
+Bigram overlap: whether the output reproduces the reference's short phrases, not just its words. It is stricter than ROUGE-1 and more sensitive to fluency and phrasing.
+
+**How it is computed**
+
+1. `rouge` with `variant=rouge2`.
+2. Tokenise both texts (default: lower-case, keep only `a-z0-9` runs; no stemming).
+3. Build the multiset of adjacent token pairs for each and count the clipped overlap.
+4. Precision = overlap / output bigrams, recall = overlap / reference bigrams, F = harmonic mean.
+5. With several references, keep the one with the highest F.
+
+```text
+overlap = Σ_bigrams min(count_out(b), count_ref(b))
+P = overlap / (|out| − 1)    R = overlap / (|ref| − 1)    ROUGE-2 = 2PR / (P + R)
+```
+
+**Inputs:** `output` and `expected` and/or `references`.
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `measure` | `'f'` | `f` (default), `p`/`precision`, or `r`/`recall`. |
+| `tokenizer` | `'default'` | `default` (reference ASCII tokeniser) or `unicode` (keeps any script). |
+| `variant` | `'rouge2'` |  |
+
+**How to read it**
+
+0–1, typically about half of ROUGE-1 on abstractive summaries. One inserted word breaks two bigrams, so small edits move it noticeably; a sharp drop in ROUGE-2 with stable ROUGE-1 means phrasing changed while content did not.
+
+**Use it when**
+
+- Summarisation benchmarks where ROUGE-2 is the conventional headline alongside ROUGE-1 and ROUGE-L.
+- Detecting phrasing drift between system versions.
+
+**Pitfalls**
+
+- One-word outputs have no bigrams and score 0 against any reference.
+- Penalises valid paraphrase heavily; never use it alone to judge correctness.
+- {'Non-ASCII text scores near 0 with the default tokenizer; set `tokenizer': 'unicode`.'}
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "the cat was found under the bed", "expected": "the cat was under the bed"}
+```
+
+Result: **0.7273**. Matches rouge-score's rouge2 F-measure (precision 0.6667, recall 0.8).
+
+**Related:** [`rouge`](#rouge), [`rouge1`](#rouge1), [`rougeL`](#rougel)
+
+**References**
+
+- Lin, C.-Y. (2004). ROUGE: A Package for Automatic Evaluation of Summaries. Text Summarization Branches Out (ACL 2004 Workshop), pp. 74–81. <https://aclanthology.org/W04-1013/>
+
+## rougeL
+
+*Length of the longest sequence of words that appears in the same order in both output and reference, as an F-score (ROUGE-L).*
+
+**Level:** sample · **Range:** 0 to 1, higher is better · **Needs:** `output`, `expected` · **Deterministic:** yes
+
+**What it measures**
+
+In-order word overlap. The longest common subsequence (LCS) counts words that appear in the same relative order in both texts, even with other words in between, so it rewards preserving the reference's sentence structure without requiring contiguous phrases.
+
+**How it is computed**
+
+1. `rouge` with `variant=rougeL`.
+2. Tokenise both texts (default: lower-case, keep only `a-z0-9` runs; no stemming).
+3. Compute the LCS length of the two token lists by dynamic programming. The whole text is treated as one
+   sequence (sentence boundaries are ignored; see `rougeLsum` for the sentence-aware version).
+4. Precision = LCS / output length, recall = LCS / reference length, F = harmonic mean (β = 1).
+5. With several references, keep the one with the highest F.
+
+```text
+P = LCS(out, ref) / |out|     R = LCS(out, ref) / |ref|     ROUGE-L = 2PR / (P + R)
+```
+
+**Inputs:** `output` and `expected` and/or `references`.
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `measure` | `'f'` | `f` (default), `p`/`precision`, or `r`/`recall`. |
+| `tokenizer` | `'default'` | `default` (reference ASCII tokeniser) or `unicode` (keeps any script). |
+| `variant` | `'rougeL'` |  |
+
+**How to read it**
+
+0–1, between ROUGE-2 and ROUGE-1 in most data. If ROUGE-L is close to ROUGE-1, the shared words appear in the reference's order; a large gap means the output reorders content (for example, swaps sentences).
+
+**Use it when**
+
+- Single-sentence or short outputs where order matters (headlines, short answers, captions).
+- A general-purpose ROUGE when you only want one number.
+
+**Pitfalls**
+
+- Multi-sentence outputs are treated as one sequence, so swapping two correct sentences roughly halves the score. Use `rougeLsum` for multi-sentence summaries.
+- Only one LCS is counted; repeated or alternative matching orders earn nothing extra.
+- {'Non-ASCII text scores near 0 with the default tokenizer; set `tokenizer': 'unicode`.'}
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "the cat was found under the bed", "expected": "the cat was under the bed"}
+```
+
+Result: **0.9231**. Matches rouge-score's rougeL F-measure.
+
+**Related:** [`rouge`](#rouge), [`rougeLsum`](#rougelsum), [`rouge1`](#rouge1), [`rouge2`](#rouge2)
+
+**References**
+
+- Lin, C.-Y. (2004). ROUGE: A Package for Automatic Evaluation of Summaries. Text Summarization Branches Out (ACL 2004 Workshop), pp. 74–81. <https://aclanthology.org/W04-1013/>
+
+## rougeLsum
+
+*Sentence-aware ROUGE-L for multi-sentence summaries; each reference sentence is matched against every output sentence, so sentence order does not matter.*
+
+**Level:** sample · **Range:** 0 to 1, higher is better · **Needs:** `output`, `expected` · **Deterministic:** yes
+
+**What it measures**
+
+Summary-level in-order overlap. For each reference sentence it finds the words that lie on a longest common subsequence with any output sentence (the "union LCS"), so a summary that states the right sentences in a different order is not penalised the way `rougeL` penalises it.
+
+**How it is computed**
+
+1. `rouge` with `variant=rougeLsum`.
+2. Split output and reference into sentences with the built-in rule-based splitter: a break after `.`, `!` or
+   `?` followed by whitespace and an upper-case letter or digit, and **every line break** (so text with one
+   sentence per line splits exactly as rouge-score's rougeLsum does).
+3. Tokenise each sentence (default: lower-case, keep only `a-z0-9` runs).
+4. For each reference sentence, take the union of the reference-token positions that lie on an LCS with each
+   output sentence.
+5. Count a hit for each position in the union, consuming one occurrence of that token from both texts' token
+   counts so that no token is counted more often than it appears (as in rouge-score).
+6. Precision = hits / output tokens, recall = hits / reference tokens, F = harmonic mean; with several
+   references keep the best F.
+
+```text
+hits = Σ_{r ∈ ref sentences} |∪_{o ∈ out sentences} LCS_positions(r, o)|    (capped by token counts)
+P = hits / Σ|o|     R = hits / Σ|r|     ROUGE-Lsum = 2PR / (P + R)
+```
+
+**Inputs:** `output` and `expected` and/or `references` as prose with sentence-ending punctuation.
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `measure` | `'f'` | `f` (default), `p`/`precision`, or `r`/`recall`. |
+| `tokenizer` | `'default'` | `default` (reference ASCII tokeniser) or `unicode` (keeps any script). |
+| `variant` | `'rougeLsum'` |  |
+
+**How to read it**
+
+0–1, at least as high as `rougeL` on the same pair and equal to it for single-sentence texts. A large gap between rougeLsum and rougeL means the output contains the reference's sentences but in a different order.
+
+**Use it when**
+
+- Multi-sentence summarisation, where it is the conventional ROUGE-L for summary benchmarks.
+- Any long-form output where sentence order is not important.
+
+**Pitfalls**
+
+- Sentences are found by line breaks *and* punctuation. rouge-score's rougeLsum splits **only** on line breaks, so for prose written on one line with several sentences the two differ: rouge-score treats it as one sentence (the same as rougeL).
+- Sentences starting with a lower-case letter are not split from the previous one.
+- {'Non-ASCII text scores near 0 with the default tokenizer; set `tokenizer': 'unicode`.'}
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "The cat sat down. It slept under the bed.", "expected": "The cat was under the bed. It sat down."}
+```
+
+Result: **0.8889**. Matches rouge-score's rougeLsum with the sentences on separate lines; rougeL on the same pair is only 0.5556 because the sentence order is swapped.
+
+**Related:** [`rougeL`](#rougel), [`rouge`](#rouge), [`rouge1`](#rouge1), [`rouge2`](#rouge2)
+
+**References**
+
+- Lin, C.-Y. (2004). ROUGE: A Package for Automatic Evaluation of Summaries. Text Summarization Branches Out (ACL 2004 Workshop), pp. 74–81. <https://aclanthology.org/W04-1013/>
+
+## self_bleu
+
+*How similar the outputs are to each other, as the average BLEU of each output against all the others; lower means more diverse.*
+
+**Level:** corpus · **Range:** 0 to 1, lower is better · **Needs:** `output` · **Deterministic:** yes
+
+**What it measures**
+
+Diversity across a set of generations at the phrase level. Each output is treated as a hypothesis and every other output as its references; if outputs reuse each other's word sequences, their BLEU against each other is high. It needs no reference text.
+
+**How it is computed**
+
+1. Take the first `limit` outputs (default 200; the cost grows quadratically) and tokenise them with BLEU's `13a`
+   tokenizer. Fewer than two outputs gives no score.
+2. For each output, compute smoothed sentence BLEU (as in `sentence_bleu`: clipped n-gram precision up to
+   `max_order`, effective order, exponential smoothing, brevity penalty against the closest-length other
+   output) using all other outputs as references.
+3. Return the mean over outputs.
+
+```text
+self_BLEU = (1/N) Σ_i sentence_BLEU( out_i, {out_j : j ≠ i} )      N = min(#samples, limit)
+```
+
+**Inputs:** `output` of every sample (corpus-level).
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `max_order` | `4` | Longest n-gram counted (default 4). |
+| `limit` | `200` | Maximum number of outputs used, taken from the start of the dataset (default 200). |
+
+**How to read it**
+
+0–1, lower is more diverse. Values near 1 mean outputs are near-copies of each other (mode collapse); typical varied generations score well below 0.3. Compare only runs with the same number of outputs, since more outputs means more references and higher BLEU.
+
+**Use it when**
+
+- Measuring mode collapse in creative or open-ended generation (stories, synthetic data, paraphrases).
+- Comparing sampling settings for diversity, alongside a quality metric.
+
+**Pitfalls**
+
+- Uses sacreBLEU-style tokenisation and exponential smoothing, whereas the original Texygen implementation uses a different BLEU smoothing; absolute values are not comparable with Texygen-reported numbers.
+- Only the first `limit` outputs are used (not a random sample); order your dataset accordingly or raise the limit.
+- Grows with the number of outputs compared, so it is not comparable across dataset sizes.
+- When several samples share the same prompt, high Self-BLEU may simply reflect the shared topic.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "the weather is nice today"}
+{"output": "the weather is nice today too"}
+{"output": "I would like a cup of tea"}
+```
+
+Result: **0.5371**. The first two outputs are near-duplicates and dominate the score.
+
+**Related:** [`distinct_n`](#distinct_n), [`sentence_bleu`](#sentence_bleu), [`bleu`](#bleu)
+
+**References**
+
+- Zhu, Y., Lu, S., Zheng, L., Guo, J., Zhang, W., Wang, J., and Yu, Y. (2018). Texygen: A Benchmarking Platform for Text Generation Models. Proceedings of SIGIR 2018, pp. 1097–1100. <https://arxiv.org/abs/1802.01886>
+
+## sentence_bleu
+
+*BLEU for a single output against its own references, smoothed so that a short or partly matching answer still gets a non-zero score.*
+
+**Level:** sample · **Range:** 0 to 1, higher is better · **Needs:** `output`, `expected` · **Deterministic:** yes
+
+**What it measures**
+
+Per-sample surface overlap with the reference: what share of the output's 1- to 4-word sequences also occur in a reference, scaled down when the output is shorter than the reference. It is the per-sample counterpart of `bleu`, useful when you need a score for every row (to sort, filter, or threshold) rather than one corpus number.
+
+**How it is computed**
+
+1. Tokenise the output and every reference with the same `13a` tokenizer as `bleu` (punctuation split from words).
+2. For each n from 1 to `max_order`, count the output's n-grams and clip each count at the largest number of
+   times it occurs in any single reference (modified precision).
+3. Use the **effective order**: only the orders the output is long enough to contain are averaged (a 3-token
+   output is scored on 1- to 3-grams), as sacreBLEU does for sentence-level scores.
+4. Apply **exponential smoothing** (sacreBLEU's `exp` method) to orders with zero matches: the k-th such order
+   gets precision 1 / (2^k · total_n) instead of 0, so one missing 4-gram does not zero the score.
+5. Multiply the geometric mean of the precisions by the brevity penalty, using the reference whose length is
+   closest to the output (the shorter one on a tie).
+
+```text
+p_n  = Σ_g min(count_out(g), max_ref count_ref(g)) / Σ_g count_out(g)
+p_n  = 1 / (2^k · total_n)    when p_n would be 0 (k = 1, 2, … for each successive zero order)
+N'   = number of orders n ≤ max_order with total_n > 0   (effective order)
+BP   = 1 if c > r else exp(1 − r / c)    (c = output length, r = closest reference length)
+sentence_BLEU = BP · exp( (1/N') Σ_{n=1..N'} log p_n )
+```
+
+**Inputs:** `output` and `expected` and/or `references` (every reference is used for clipping; the closest-length one for the brevity penalty). An empty output scores 0.
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `max_order` | `4` | Longest n-gram counted (default 4). The effective order can only lower this for short outputs, never raise it. |
+
+**How to read it**
+
+0–1 scale (sacreBLEU prints × 100). Per-sample BLEU is noisy: a single changed word in a ten-word answer moves it a lot, and smoothing makes very short outputs score higher than unsmoothed BLEU would. Read the mean over a dataset as a trend indicator and individual values as a way to find the rows that drifted furthest from their reference; do not compare a mean of `sentence_bleu` with a corpus `bleu` number, they are different statistics.
+
+**Use it when**
+
+- You need a per-row overlap score to sort, filter or set a pass threshold on (for example, flag outputs below 0.2 for review).
+- Paired significance tests between two system versions, which need one value per sample.
+- Translation-like tasks evaluated one item at a time.
+
+**Pitfalls**
+
+- The mean of sentence BLEU is not corpus BLEU: short samples weigh as much as long ones and smoothing inflates low scores. Report `bleu` for the corpus number.
+- Smoothing gives non-zero scores to outputs that share almost nothing with the reference; small values (below about 0.05) carry little information.
+- Like all BLEU variants it rewards exact wording, so correct paraphrases score low. Pair with `semantic_similarity` or a judge.
+- Scores depend on the tokenizer; only compare numbers produced the same way.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "the cat sat on the mat", "expected": "the cat sat on a mat"}
+```
+
+Result: **0.5373**. Identical to sacreBLEU's sentence_bleu (53.73) with its default exponential smoothing.
+
+**Related:** [`bleu`](#bleu), [`chrf`](#chrf), [`self_bleu`](#self_bleu), [`rouge`](#rouge)
+
+**References**
+
+- Papineni, K., Roukos, S., Ward, T., and Zhu, W.-J. (2002). BLEU: a Method for Automatic Evaluation of Machine Translation. Proceedings of ACL 2002, pp. 311–318. <https://aclanthology.org/P02-1040/>
+- Post, M. (2018). A Call for Clarity in Reporting BLEU Scores. Proceedings of the Third Conference on Machine Translation (WMT), pp. 186–191. <https://aclanthology.org/W18-6319/>
+
+## token_f1
+
+*Word-overlap F1 between the output and the best-matching reference, treating each text as a bag of words (SQuAD F1).*
+
+**Level:** sample · **Range:** 0 to 1, higher is better · **Needs:** `output`, `expected` · **Deterministic:** yes
+
+**What it measures**
+
+Partial credit for short answers: how many of the output's words are in the reference (precision) and how many of the reference's words are in the output (recall), ignoring order. It is the F1 score of the SQuAD benchmark.
+
+**How it is computed**
+
+1. With `normalize=true` (default): apply the SQuAD normalisation used by `normalized_match` (NFKC, lower-case,
+   remove punctuation and articles, collapse spaces) and split on whitespace. With `normalize=false`: lower-case
+   and take word tokens (`\w+` runs, keeping internal hyphens and apostrophes) without removing articles.
+2. Count the multiset intersection of output and reference tokens.
+3. Precision = common / output tokens, recall = common / reference tokens, F1 = harmonic mean. Two empty texts
+   score 1; one empty text scores 0.
+4. Score against every reference and keep the one with the highest F1. Precision and recall of that reference
+   are reported in the details.
+
+```text
+common = Σ_w min(count_out(w), count_ref(w))
+P = common / |out|    R = common / |ref|    F1 = 2PR / (P + R)
+score = max over references of F1
+```
+
+**Inputs:** `output` and `expected` and/or `references`.
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `normalize` | `True` | Apply SQuAD answer normalisation before splitting (default true). Set false to keep articles and split on word characters instead. |
+
+**How to read it**
+
+0–1 per sample; the mean is SQuAD-style F1. Use the precision and recall in the details to diagnose: low precision means the output is padded with extra words, low recall means it is missing parts of the answer.
+
+**Use it when**
+
+- Short-answer and extractive QA, alongside `normalized_match`.
+- Any task where partially correct answers deserve partial credit.
+
+**Pitfalls**
+
+- Long, chatty answers have low precision even when correct: "The answer is Denver Broncos" against "Denver Broncos" scores 0.67. Extract the answer span first, or use `contains`.
+- Order-blind, so "dog bites man" equals "man bites dog".
+- With multiple references it is the maximum, so adding references can only raise the score.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "the Denver Broncos", "expected": "Denver Broncos won Super Bowl 50"}
+```
+
+Result: **0.5**. "the" is removed by normalisation, so precision is 1.0 and recall 2/6.
+
+**Related:** [`normalized_match`](#normalized_match), [`exact_match`](#exact_match), [`rouge1`](#rouge1), [`jaccard`](#jaccard)
+
+**References**
+
+- Rajpurkar, P., Zhang, J., Lopyrev, K., and Liang, P. (2016). SQuAD: 100,000+ Questions for Machine Comprehension of Text. Proceedings of EMNLP 2016, pp. 2383–2392. <https://aclanthology.org/D16-1264/>
+
+## within_length
+
+*1 if the output's word count is between a minimum and maximum (inclusive), otherwise 0.*
+
+**Level:** sample · **Range:** 0 to 1, higher is better · **Needs:** `output` · **Deterministic:** yes
+
+**What it measures**
+
+Compliance with a length requirement. It turns a word budget into a pass/fail score whose mean is the compliance rate.
+
+**How it is computed**
+
+1. Count word tokens in the output exactly as `word_count` does.
+2. Return 1.0 if minimum ≤ count ≤ maximum, else 0.0.
+
+```text
+within_length = 1 if minimum ≤ |tokens(output)| ≤ maximum else 0
+```
+
+**Inputs:** `output` only.
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `minimum` | `0` | Smallest acceptable word count, inclusive (default 0). |
+| `maximum` | `200` | Largest acceptable word count, inclusive (default 200). Unlike `word_count`, 0 here really means zero words allowed. |
+
+**How to read it**
+
+Binary per sample; the mean is the share of outputs within the length budget. Combine with a quality metric: meeting the budget is necessary, not sufficient.
+
+**Use it when**
+
+- Enforcing response length requirements (summaries, tweets, UI strings, SMS).
+- Catching runaway or empty generations (set a minimum of 1).
+
+**Pitfalls**
+
+- `maximum: 0` means only empty outputs pass, whereas in `word_count` 0 means no limit.
+- The default maximum of 200 words is arbitrary; set the bounds explicitly for your task.
+- Counts words, not characters or model tokens; a budget expressed in tokens needs `total_tokens` instead.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "The meeting moved to Thursday at noon."}
+```
+
+```yaml
+metrics:
+- name: within_length
+  params:
+    maximum: 5
+```
+
+Result: **0**. 7 words exceed the maximum of 5.
+
+**Related:** [`word_count`](#word_count), [`length_ratio`](#length_ratio), [`total_tokens`](runtime.md#total_tokens)
+
+## word_count
+
+*The number of words in the output, with an optional check against a minimum and maximum.*
+
+**Level:** sample · **Range:** 0 to ∞, higher is better · **Needs:** `output` · **Deterministic:** yes
+
+**What it measures**
+
+Output length in words. It is a descriptive statistic for answer length, verbosity and budget compliance rather than a quality score.
+
+**How it is computed**
+
+1. Tokenise the output: Unicode NFKC, lower-case, word tokens (`\w+` runs, keeping internal hyphens and
+   apostrophes); punctuation is not counted.
+2. Return the number of tokens.
+3. The details report `within_bounds`: true when the count is at least `minimum` and, if `maximum` > 0, at most
+   `maximum`. The bounds do not change the value.
+
+```text
+word_count = |tokens(output)|
+within_bounds = (count ≥ minimum) and (maximum ≤ 0 or count ≤ maximum)
+```
+
+**Inputs:** `output` only.
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `minimum` | `0` | Lower bound reported in the `within_bounds` detail (default 0). |
+| `maximum` | `0` | Upper bound reported in the `within_bounds` detail (default 0, which means no upper bound). |
+
+**How to read it**
+
+A count, not a 0–1 score. Read the mean and spread across the dataset to see typical answer length; use the `within_bounds` detail, or `within_length`, when you need a pass/fail rate.
+
+**Use it when**
+
+- Tracking verbosity across prompt or model versions.
+- Checking compliance with a word budget ("answer in under 50 words").
+
+**Pitfalls**
+
+- It is declared higher-is-better only because it has no natural direction; do not read a higher mean as an improvement.
+- Hyphenated and apostrophe words count once ("state-of-the-art" is one word, "don't" is one), and numbers count as words; counts differ from word processors.
+- Languages written without spaces get very low counts; count characters instead for those.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"output": "The meeting moved to Thursday at noon."}
+```
+
+```yaml
+metrics:
+- name: word_count
+  params:
+    maximum: 5
+```
+
+Result: **7**. The details report within_bounds false because 7 exceeds the maximum of 5.
+
+**Related:** [`within_length`](#within_length), [`length_ratio`](#length_ratio)

@@ -13,7 +13,7 @@ _ARTICLES = re.compile(r"\b(a|an|the)\b", re.IGNORECASE)
 _PUNCT = set(string.punctuation) | {"“", "”", "‘", "’", "—", "–", "…"}
 _SENTENCE = re.compile(r"(?<=[.!?])\s+(?=[\"'(\[]?[A-Z0-9])")
 _CITATION = re.compile(r"\s*\[\d+(?:,\s*\d+)*\]")
-_NUMBER = re.compile(r"[-+]?\d[\d,]*\.?\d*(?:[eE][-+]?\d+)?")
+_NUMBER = re.compile(r"[-+]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:[eE][-+]?\d+)?")
 
 STOPWORDS = frozenset(
     [
@@ -157,15 +157,15 @@ def ngrams(seq: Sequence[str], n: int) -> Counter[tuple[str, ...]]:
 
 def sentences(text: str) -> list[str]:
     """Split prose into sentences (a light rule-based splitter: no model, deterministic)."""
-    text = " ".join(text.split())
-    if not text:
-        return []
-    parts = _SENTENCE.split(text)
     out: list[str] = []
-    for part in parts:
-        for line in re.split(r"\s*(?:\n|•|;\s+(?=[A-Z]))\s*", part):
-            if line.strip():
-                out.append(line.strip())
+    for (
+        raw_line
+    ) in text.splitlines():  # a line break always ends a sentence (lists, one sentence per line)
+        line = " ".join(raw_line.split())
+        for part in _SENTENCE.split(line) if line else []:
+            for piece in re.split(r"\s*(?:•|;\s+(?=[A-Z]))\s*", part):
+                if piece.strip():
+                    out.append(piece.strip())
     return out
 
 

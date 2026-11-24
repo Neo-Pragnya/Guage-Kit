@@ -5,6 +5,10 @@ description: The guage_kit package's public functions and classes, with their si
 
 # Python API
 
+> [!TIP]
+> This page is a guided tour. The [API reference](api.md) documents every public class and function, with
+> signatures and fields generated from the code.
+
 ```python
 import guage_kit as gk
 ```

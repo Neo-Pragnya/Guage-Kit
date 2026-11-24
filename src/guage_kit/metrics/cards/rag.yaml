@@ -1,0 +1,506 @@
+# Metric cards for the RAG family. Format: guage_kit/metrics/cards.py. Examples are checked by tests/test_metric_cards.py.
+
+faithfulness:
+  summary: The share of the answer's claims that the retrieved contexts support, so 1.0 means everything the answer says can be found in what was retrieved.
+  measures: >-
+    Groundedness of a generated answer in its retrieved evidence. It answers "did the generator stick to the
+    passages it was given, or did it add things they do not say?" It says nothing about whether the answer is
+    correct or whether the passages were the right ones: a faithful answer can be wrong if the contexts are wrong.
+  method: |
+    1. Split the answer into claims with a deterministic, rule-based splitter: citation markers such as `[1]` or
+       `[1, 2]` are removed, the text is split into sentences, and each sentence is split again at "and", "but",
+       "while" or "whereas" when another clause follows. Fragments shorter than three words are merged into the
+       previous claim. An answer with no claims is skipped, not scored.
+    2. Check each claim against the contexts.
+       - `method: lexical` (default, offline): compute the claim's **support** in each context and in all contexts
+         joined, and keep the best. Support is 0.7 × the share of the claim's content words (stopwords removed,
+         lower-cased) found in the evidence + 0.3 × the share of its content bigrams found there. If the claim
+         contains a number the evidence does not contain, support is capped at 0.5. A claim is supported when
+         support ≥ `threshold`.
+       - `method: judge`: the run's judge is asked whether all contexts (joined) support the claim and answers
+         supported (1.0), partial (0.5) or unsupported (0.0). A claim is supported at 0.5 or above; `threshold` is
+         not used. The offline heuristic judge answers with the same lexical support.
+    3. The score is supported claims ÷ claims. The details hold a claim table (claim, supported, support) and the
+       list of unsupported claims.
+
+    The paper this follows (Es et al.) has an LLM both extract the statements and verify each one. Here, by
+    default, neither step uses a model: claim splitting is always rule-based, and verification is lexical unless
+    you choose `method: judge`.
+  formula: |
+    support(c, E) = 0.7 · |content_words(c) ∩ content_words(E)| / |content_words(c)|
+                  + 0.3 · matched_content_bigrams(c, E) / |content_bigrams(c)|
+                  (capped at 0.5 if c contains a number not in E)
+    s(c)          = max( max_i support(c, context_i),  support(c, all contexts joined) )
+    supported(c)  = s(c) ≥ threshold                       (lexical)
+                  = judge_entailment(contexts, c) ≥ 0.5    (judge)
+    faithfulness  = |{c : supported(c)}| / |claims(output)|
+  inputs: "`output` (the answer to split into claims) and `contexts` (the retrieved passages, a list of strings). Samples without contexts are skipped."
+  params:
+    method: "`lexical` (default; offline, deterministic) or `judge` (the run's judge verifies each claim; needs `judge=` or `judge:` in guage.yaml)."
+    threshold: "Minimum lexical support for a claim to count as supported (default 0.6). Ignored with `method: judge`. Raise it to be stricter about wording; lower it for answers that paraphrase lightly."
+  interpret: >-
+    0–1, higher is better. 1.0 means every claim was found in the contexts; 0.67 means one claim in three was not.
+    Read the claim table rather than the number alone: the unsupported claims tell you exactly what was invented
+    or mis-copied. For a production RAG assistant, a mean below about 0.8 with the lexical method usually means the
+    generator is adding facts from its own memory or getting numbers wrong; check a few samples before acting,
+    because heavy paraphrasing also lowers the lexical score.
+  use_when:
+    - Checking that a RAG generator stays within its retrieved evidence (support bots, policy and documentation assistants).
+    - Catching wrong numbers, dates and amounts copied from the contexts: the number cap makes these fail even when the words match.
+    - A cheap, transparent gate in CI; switch to `method: judge` for answers that paraphrase heavily.
+  pitfalls:
+    - The lexical method cannot recognise a paraphrase that shares few words with the source ("costs 6 dollars" vs "priced at six USD"), so faithful answers can score low. Compare against `method: judge` on a sample before trusting either.
+    - The lexical method cannot see negation or contradiction. "Refunds are not available" is fully supported by "Refunds are available" because "not" is a stopword.
+    - Generic claims made of common words ("It is very useful.") have few or no content words and are easily "supported". A claim with no content words at all gets support 1.0.
+    - Faithfulness is not correctness. If retrieval returns the wrong passages, a faithful answer is faithfully wrong; pair it with `context_recall` or `answer_correctness`.
+    - Claim splitting is rule-based. Long sentences with several facts become one claim, which then needs all its words supported; lists split poorly.
+  example:
+    samples:
+      - output: "The Eiffel Tower is in Paris. It was completed in 1889. It is 500 metres tall."
+        contexts:
+          - "The Eiffel Tower is a wrought-iron tower in Paris, completed in 1889."
+          - "It is 330 metres tall."
+    value: 0.6667
+    note: Lexical method. The third claim has every word in the contexts except the number 500, so the number cap holds its support at 0.5, below the 0.6 threshold.
+  related: [hallucination_rate, context_recall, answer_correctness, citation_accuracy, judge]
+  references:
+    - citation: "Es, S., James, J., Espinosa-Anke, L., and Schockaert, S. (2024). Automated Evaluation of Retrieval Augmented Generation. Proceedings of EACL 2024: System Demonstrations."
+      url: https://arxiv.org/abs/2309.15217
+    - citation: "Min, S., Krishna, K., Lyu, X., Lewis, M., Yih, W., Koh, P. W., Iyyer, M., Zettlemoyer, L., and Hajishirzi, H. (2023). FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation. Proceedings of EMNLP 2023."
+      url: https://arxiv.org/abs/2305.14251
+
+hallucination_rate:
+  summary: The share of the answer's claims that nothing in the retrieved contexts supports; exactly 1 − faithfulness, so lower is better.
+  measures: >-
+    How much of a RAG answer is unsupported by its evidence. It answers "what fraction of what the system said
+    cannot be traced to the passages it was given?" It is the same measurement as `faithfulness`, stated as an error
+    rate, which reads more naturally in a gate ("hallucination_rate ≤ 0.1").
+  method: |
+    1. Run `faithfulness` with the same `method` and `threshold` (rule-based claim splitting, then lexical support
+       or judge entailment per claim; see that card).
+    2. Return 1 − faithfulness. The details list the unsupported claims.
+
+    "Hallucination" here means *unsupported by the given contexts*, not *false in the world*: a true fact the
+    contexts do not mention counts as a hallucination. Claim-level factuality work such as FActScore checks claims
+    against a knowledge source with a model; this metric checks them against the sample's own contexts, lexically
+    by default.
+  formula: |
+    hallucination_rate = 1 − faithfulness
+                       = |{c ∈ claims(output) : not supported(c)}| / |claims(output)|
+  inputs: "`output` and `contexts`, as for `faithfulness`. Samples whose answer has no claims are skipped."
+  params:
+    method: "`lexical` (default) or `judge`; passed to `faithfulness`."
+    threshold: "Minimum lexical support for a claim to count as supported (default 0.6); passed to `faithfulness`. Ignored with `method: judge`."
+  interpret: >-
+    0–1, lower is better. 0 means every claim was supported; 0.33 means one claim in three was not. It carries
+    exactly the information of `faithfulness`, so report one or the other, not both. Gate on it with a maximum
+    (`threshold: 0.1` in a metric entry passes when the value is at or below 0.1).
+  use_when:
+    - Release gates and dashboards where an error rate is easier to communicate than a support rate.
+    - Listing the specific unsupported claims per sample for review.
+  pitfalls:
+    - Inherits every limit of `faithfulness`: paraphrases inflate it, negations and contradictions are invisible to the lexical method.
+    - It measures support by the contexts, not truth. Correct background knowledge counts as hallucinated; a false statement copied from a wrong passage does not.
+    - Averaged over samples, one long answer and one short answer weigh the same; look at the distribution, not just the mean.
+  example:
+    samples:
+      - output: "The Eiffel Tower is in Paris. It was completed in 1889. It is 500 metres tall."
+        contexts:
+          - "The Eiffel Tower is a wrought-iron tower in Paris, completed in 1889."
+          - "It is 330 metres tall."
+    value: 0.3333
+    note: The wrong height ("500 metres" where the context says 330) is the one unsupported claim out of three.
+  related: [faithfulness, citation_accuracy, judge]
+  references:
+    - citation: "Es, S., James, J., Espinosa-Anke, L., and Schockaert, S. (2024). Automated Evaluation of Retrieval Augmented Generation. Proceedings of EACL 2024: System Demonstrations."
+      url: https://arxiv.org/abs/2309.15217
+    - citation: "Ji, Z., Lee, N., Frieske, R., Yu, T., Su, D., Xu, Y., Ishii, E., Bang, Y. J., Madotto, A., and Fung, P. (2023). Survey of Hallucination in Natural Language Generation. ACM Computing Surveys 55(12)."
+      url: https://doi.org/10.1145/3571730
+    - citation: "Min, S., Krishna, K., Lyu, X., Lewis, M., Yih, W., Koh, P. W., Iyyer, M., Zettlemoyer, L., and Hajishirzi, H. (2023). FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation. Proceedings of EMNLP 2023."
+      url: https://arxiv.org/abs/2305.14251
+
+context_recall:
+  summary: The share of the reference answer's claims that the retrieved contexts contain, i.e. whether retrieval found everything needed to answer.
+  measures: >-
+    Completeness of retrieval, judged by text rather than ids. It answers "if the generator were perfect, could it
+    have produced the reference answer from these passages?" Low context recall points at the retriever, not the
+    generator.
+  method: |
+    1. Split the **first** reference answer into claims with the same rule-based splitter as `faithfulness`.
+       A reference with no claims is skipped.
+    2. Check each reference claim against the contexts exactly as `faithfulness` checks answer claims: best lexical
+       support over each context and all contexts joined, with the number cap (`method: lexical`), or the judge's
+       entailment verdict (`method: judge`).
+    3. The score is supported reference claims ÷ reference claims, with a claim table in the details.
+
+    The idea comes from the framework of Es et al., where an LLM attributes each reference sentence to the context.
+    Here the attribution is lexical by default and a model is used only with `method: judge`.
+  formula: |
+    context_recall = |{c ∈ claims(expected[0]) : supported(c, contexts)}| / |claims(expected[0])|
+    (supported() as in faithfulness: lexical support ≥ threshold, or judge entailment ≥ 0.5)
+  inputs: "`expected` (the reference answer; only the first reference is used) and `contexts`. Needs no `output`, so it can score retrieval before generation exists."
+  params:
+    method: "`lexical` (default) or `judge` (the run's judge decides whether the contexts support each reference claim)."
+    threshold: "Minimum lexical support for a reference claim to count as found (default 0.6). Ignored with `method: judge`."
+  interpret: >-
+    0–1, higher is better. 1.0 means every fact in the reference appears in the retrieved text. Values well below
+    1.0 mean the retriever missed passages; raise k, improve chunking or the retriever before tuning the prompt.
+    When you also have ids, compare with `recall@k`: if id recall is high but context recall low, the relevant
+    documents were found but the chunks sent to the model do not hold the answer.
+  use_when:
+    - Diagnosing retrieval in a RAG pipeline when you have reference answers but no relevance labels.
+    - Choosing k, chunk size or retriever: context recall shows whether the needed facts reach the generator.
+  pitfalls:
+    - Only `expected[0]` is used; alternative references are ignored.
+    - A reference phrased differently from the source documents scores low even when retrieval was perfect. Write references in the documents' vocabulary, or use `method: judge`.
+    - Reference claims that are generic (few content words) are trivially found.
+    - Says nothing about noise: retrieving the whole corpus gives perfect context recall. Pair with `context_precision` or `context_relevance`.
+  example:
+    samples:
+      - expected: "The Eiffel Tower stands in Paris. It was completed in 1889. Gustave Eiffel's company built it."
+        contexts:
+          - "The Eiffel Tower is a wrought-iron tower in Paris, completed in 1889."
+          - "It is 330 metres tall."
+    value: 0.6667
+    note: The location and date are found (the first at support 0.625, above the 0.6 threshold); nothing retrieved mentions who built it.
+  related: [context_precision, context_relevance, recall, faithfulness]
+  references:
+    - citation: "Es, S., James, J., Espinosa-Anke, L., and Schockaert, S. (2024). Automated Evaluation of Retrieval Augmented Generation. Proceedings of EACL 2024: System Demonstrations."
+      url: https://arxiv.org/abs/2309.15217
+
+context_precision:
+  summary: Rank-aware precision of the retrieved chunks, which is high when the relevant chunks come before the irrelevant ones.
+  measures: >-
+    Whether the retriever puts useful passages at the top. It answers "how much does the reader (or the model)
+    have to wade through irrelevant chunks before reaching the relevant ones?" It is average precision computed
+    over the retrieved contexts, where relevance comes from ids or from text.
+  method: |
+    1. Decide for each context (in order, position i) whether it is relevant, using the first source available:
+       - `relevant_ids`: the chunk is relevant if `retrieved_ids[i]` is in `relevant_ids` (positions beyond the
+         end of `retrieved_ids` fall through to the next rule);
+       - otherwise the reference answer(s): relevant if any reference claim has lexical support ≥ `threshold`
+         in the chunk (the support function described under `faithfulness`);
+       - otherwise the question: relevant if the share of the question's content words found in the chunk is
+         ≥ `threshold`.
+    2. If no chunk is relevant, the score is 0.
+    3. Otherwise average precision@i over the positions i that hold a relevant chunk.
+
+    Es et al.'s framework judges each chunk's relevance with an LLM. This implementation uses labels when you have
+    them and lexical rules otherwise; it never calls a model, even when a judge is configured.
+  formula: |
+    rel_i  ∈ {0, 1}  for each context i = 1..K   (from relevant_ids, else reference support, else question overlap)
+    P@i    = (Σ_{j ≤ i} rel_j) / i
+    context_precision = Σ_i (P@i · rel_i) / Σ_i rel_i          (0 when Σ rel_i = 0)
+  inputs: "`contexts` (ranked, best first), plus relevance evidence: `relevant_ids` with `retrieved_ids` aligned to the contexts, or `expected`, or at least the question in `input`."
+  params:
+    threshold: Lexical cut-off for the text-based relevance rules (default 0.5). Unused when relevance comes from `relevant_ids`.
+  interpret: >-
+    0–1, higher is better. 1.0 means every relevant chunk is ranked above every irrelevant one (it does not say how
+    many relevant chunks there are). With relevant chunks at ranks 2 and 3 behind one irrelevant chunk, the score is
+    (1/2 + 2/3) / 2 = 0.58. Compare it across retriever or reranker versions on the same data.
+  use_when:
+    - Evaluating a reranker or the ordering of a retriever, especially when the generator reads only the first chunks or long contexts get truncated.
+    - RAG datasets without relevance labels, where the reference answer can stand in for them.
+  pitfalls:
+    - It ignores relevant chunks that were not retrieved; a retriever that returns one relevant chunk and nothing else scores 1.0. Pair it with `context_recall` or `recall@k`.
+    - "Relevance sources are mixed per sample: with `relevant_ids`, `retrieved_ids` must be aligned one-to-one with `contexts`, otherwise the wrong labels are applied."
+    - The question-overlap fallback is weak: chunks that repeat the question's words score as relevant even when they do not answer it.
+    - Differs from `average_precision`, which divides by all relevant ids (including unretrieved ones); this one divides by the relevant chunks retrieved.
+  example:
+    samples:
+      - contexts:
+          - "Berlin is the capital of Germany."
+          - "Paris is the capital of France."
+          - "France's capital city is Paris."
+        retrieved_ids: [d3, d1, d2]
+        relevant_ids: [d1, d2]
+    value: 0.5833
+    note: Relevance comes from the ids. Relevant chunks sit at ranks 2 and 3, so the score is (1/2 + 2/3) / 2.
+  related: [context_recall, context_relevance, average_precision, ndcg]
+  references:
+    - citation: "Es, S., James, J., Espinosa-Anke, L., and Schockaert, S. (2024). Automated Evaluation of Retrieval Augmented Generation. Proceedings of EACL 2024: System Demonstrations."
+      url: https://arxiv.org/abs/2309.15217
+    - citation: "Manning, C. D., Raghavan, P., and Schütze, H. (2008). Introduction to Information Retrieval, chapter 8: Evaluation in information retrieval. Cambridge University Press."
+      url: https://doi.org/10.1017/CBO9780511809071
+
+context_relevance:
+  summary: The share of sentences in the retrieved contexts that relate to the question, which measures how much of what was retrieved is noise.
+  measures: >-
+    Focus of the retrieved text. It answers "how much of the context sent to the model is about the question at
+    all?" Low values mean the generator gets long, noisy context, which costs tokens and invites distraction.
+  method: |
+    1. Take the question's content words (lower-cased, stopwords removed) as a set Q.
+    2. Split every context into sentences with the rule-based splitter.
+    3. A sentence with content words S is relevant when |S ∩ Q| / min(|Q|, |S|) ≥ `threshold`. Dividing by the
+       smaller set lets a short sentence that is entirely on topic count, and a short question be fully matched.
+    4. The score is relevant sentences ÷ all sentences.
+
+    Es et al. define context relevance the same way (the share of context sentences relevant to the question), but
+    have an LLM pick the relevant sentences. Here the choice is lexical and never uses a model.
+  formula: |
+    Q = content_words(input)
+    for each sentence s in all contexts:  relevant(s) = |content_words(s) ∩ Q| / min(|Q|, |content_words(s)|) ≥ threshold
+    context_relevance = |{s : relevant(s)}| / |sentences|
+  inputs: "`input` (the question) and `contexts`."
+  params:
+    threshold: Overlap ratio a sentence needs to count as relevant (default 0.3).
+  interpret: >-
+    0–1, higher is better. 0.25 means three quarters of the retrieved sentences share little vocabulary with the
+    question. Most real retrievers return chunks with some surrounding text, so values around 0.3–0.6 are common;
+    compare chunking and k settings on the same data rather than against an absolute target.
+  use_when:
+    - Tuning chunk size and k: smaller, tighter chunks raise it.
+    - Spotting retrievers that pad the context with off-topic passages.
+  pitfalls:
+    - A sentence that answers the question without repeating its words ("It opened in 1889." for "When was the Eiffel Tower completed?") is counted as irrelevant.
+    - A question with no content words (for example "What is it?") cannot be compared with the contexts, so the sample is skipped rather than scored.
+    - Long multi-sentence chunks where only one sentence matters score low even if retrieval was right; that is by design (it measures noise), but do not read it as retrieval accuracy.
+  example:
+    samples:
+      - input: "When was the Eiffel Tower completed?"
+        contexts:
+          - "The Eiffel Tower was completed in 1889. It was designed for a world's fair."
+          - "Paris has many bakeries. Croissants are popular."
+    value: 0.25
+    note: Of four context sentences only the first shares enough content words with the question.
+  related: [context_precision, context_recall, context_utilization]
+  references:
+    - citation: "Es, S., James, J., Espinosa-Anke, L., and Schockaert, S. (2024). Automated Evaluation of Retrieval Augmented Generation. Proceedings of EACL 2024: System Demonstrations."
+      url: https://arxiv.org/abs/2309.15217
+
+context_utilization:
+  summary: The share of retrieved chunks that the answer actually draws on, so low values mean context was retrieved but never used.
+  measures: >-
+    How much of the retrieved context ends up in the answer. It answers "of the k chunks we paid to retrieve and
+    send, how many did the generator use?" It looks at the retrieval–generation interface from the answer's side.
+  method: |
+    1. Split the answer into claims (the rule-based splitter used by `faithfulness`). An answer with no claims is
+       skipped.
+    2. A chunk counts as used when at least one answer claim has lexical support ≥ `threshold` in that chunk alone
+       (the support function described under `faithfulness`, including the number cap).
+    3. The score is used chunks ÷ retrieved chunks. The details list which chunks were used.
+
+    This metric is not taken from a specific paper; it is a deterministic companion to faithfulness and never
+    calls a model.
+  formula: |
+    used(chunk) = ∃ c ∈ claims(output) : support(c, chunk) ≥ threshold
+    context_utilization = |{chunk : used(chunk)}| / |contexts|
+  inputs: "`output` and `contexts`."
+  params:
+    threshold: Minimum lexical support for a claim to count as drawn from a chunk (default 0.6).
+  interpret: >-
+    0–1. It is neither simply good nor bad when high: a single-fact question answered from one of five chunks
+    scores 0.2 and that is fine. Use it to spot waste (consistently low values suggest k is too high) or to check
+    that a multi-hop answer actually combined several passages.
+  use_when:
+    - Choosing k and context budget: if answers rarely use more than two chunks, sending ten costs tokens for nothing.
+    - Checking multi-document synthesis, where the answer should draw on several chunks.
+  pitfalls:
+    - A claim must be supported by a single chunk; facts the answer assembles across chunks may leave each chunk marked unused.
+    - Paraphrased use of a chunk is invisible to the lexical check.
+    - Generic claims made of common words can mark an irrelevant chunk as used.
+    - Low utilization with duplicate chunks is expected (only one copy needs to be used).
+  example:
+    samples:
+      - output: "The Eiffel Tower was completed in 1889."
+        contexts:
+          - "The Eiffel Tower was completed in 1889 for the World's Fair."
+          - "Paris has many famous bakeries."
+    value: 0.5
+    note: The answer draws on the first chunk only.
+  related: [faithfulness, context_relevance, context_precision]
+  references:
+    - citation: "Es, S., James, J., Espinosa-Anke, L., and Schockaert, S. (2024). Automated Evaluation of Retrieval Augmented Generation. Proceedings of EACL 2024: System Demonstrations."
+      url: https://arxiv.org/abs/2309.15217
+
+answer_relevancy:
+  summary: How directly the answer addresses the question, from embedding similarity when an embedder is available and from word coverage otherwise.
+  measures: >-
+    Whether the answer is on point. It answers "does this response talk about what was asked, without evading or
+    drifting?" It does not check correctness: a confident wrong answer about the right topic scores high.
+  method: |
+    With an embedder (`method: auto` when the run has one, or `method: embedding`):
+    1. Embed the question and the answer with the run's embedder.
+    2. The score is their cosine similarity, floored at 0.
+
+    Without an embedder (`method: auto` with none configured, or `method: lexical`):
+    1. coverage = share of the question's content words that appear in the answer.
+    2. novelty = share of the answer's distinct content words that are not in the question (an answer that only
+       echoes the question adds nothing).
+    3. score = 0.6 × coverage + 0.4 × min(1, 1.5 × novelty), capped at 1.
+    4. If the answer opens with a refusal phrase ("I can't help with…"), the score is multiplied by 0.2.
+
+    Es et al. have an LLM generate several questions from the answer and average their embedding similarity to the
+    original question. This implementation compares the question with the answer directly and never calls a model.
+  formula: |
+    embedding:  answer_relevancy = max(0, cos(embed(input), embed(output)))
+    lexical:    coverage = |{t ∈ content(input) : t ∈ content(output)}| / |content(input)|
+                novelty  = |content(output) − content(input)| / |content(output)|      (sets)
+                answer_relevancy = min(1, 0.6·coverage + 0.4·min(1, 1.5·novelty)) · (0.2 if refusal else 1)
+  inputs: "`input` (the question) and `output` (the answer)."
+  params:
+    method: "`auto` (default: embedding when the run has an embedder, lexical otherwise), `embedding` (error if no embedder) or `lexical`."
+  interpret: >-
+    0–1, higher is better. The two methods give numbers on different scales, so never compare values across
+    methods or embedders: the details record which method was used. With the hashing embedder or a
+    sentence-transformer, a direct on-topic answer is typically well above an off-topic one, but the absolute level
+    depends on the model. With the lexical method, refusals land near 0 and answers that only restate the question
+    land around 0.6.
+  use_when:
+    - Catching evasive answers, refusals of reasonable requests and drift into unrelated material.
+    - A cheap, reference-free signal for production traffic where no expected answer exists.
+  pitfalls:
+    - The method silently depends on whether the run has an embedder; set `method` explicitly when comparing runs.
+    - Embedding similarity rewards topical overlap, so a wrong answer on the right topic scores high. Pair with `faithfulness` or `answer_correctness`.
+    - Cosine similarity between a short question and a long answer is lowered by the answer's extra content even when it is fully relevant.
+    - The lexical refusal check looks only for phrase patterns at the start of the answer.
+  example:
+    samples:
+      - input: "When was the Eiffel Tower completed?"
+        output: "The Eiffel Tower was completed in 1889."
+    value: 0.7204
+    note: Embedding method with the built-in hashing embedder (the test context provides one). A real embedding model gives a different value.
+  related: [semantic_similarity, faithfulness, judge]
+  references:
+    - citation: "Es, S., James, J., Espinosa-Anke, L., and Schockaert, S. (2024). Automated Evaluation of Retrieval Augmented Generation. Proceedings of EACL 2024: System Demonstrations."
+      url: https://arxiv.org/abs/2309.15217
+
+citation_accuracy:
+  summary: The share of inline citations `[n]` whose cited context actually supports the sentence that cites it.
+  measures: >-
+    Whether an answer's citations point to the right sources. It answers "when the answer says [2], does passage 2
+    back up that sentence?" It complements `citation_coverage`, which only checks that citations are present.
+  method: |
+    1. Split the answer into sentences (rule-based).
+    2. For each sentence, find every marker of the form `[n]` and remove the markers to get the sentence text.
+    3. For each marker, the citation is correct when 1 ≤ n ≤ number of contexts and the lexical support of the
+       sentence in context n (1-based) is ≥ `threshold` (the support function described under `faithfulness`,
+       including the number cap).
+    4. The score is correct citations ÷ citations. An answer with no citations is skipped.
+
+    Gao et al. check citations with an NLI model, judging whether the cited passages *together* entail the
+    statement (citation recall) and whether each citation is needed (citation precision). This metric checks each
+    citation alone, lexically, and never calls a model.
+  formula: |
+    for each sentence s and each marker [n] in s:
+        correct(s, n) = (1 ≤ n ≤ |contexts|) and support(s without markers, contexts[n−1]) ≥ threshold
+    citation_accuracy = |{(s, n) : correct(s, n)}| / |{(s, n)}|
+  inputs: "`output` with inline `[n]` markers and `contexts` in the order the markers refer to (`[1]` is the first context)."
+  params:
+    threshold: Minimum lexical support of the citing sentence in the cited context (default 0.5).
+  interpret: >-
+    0–1, higher is better. 1.0 means every citation points to a passage that supports its sentence. A citation to
+    a number larger than the context count is always wrong. Low values mean the model cites decoratively or
+    numbers the sources inconsistently with how they were presented in the prompt.
+  use_when:
+    - Assistants that show sources to users, where a wrong citation erodes trust more than a missing one.
+    - Checking that the prompt's passage numbering and the model's citation numbering agree.
+  pitfalls:
+    - "Markers `[n]` and grouped `[1, 2]` are recognised (each number in a group is checked); ranges such as `[1-2]` are not."
+    - A sentence that combines facts from two passages, each cited separately, fails both citations because each passage alone supports only part of it.
+    - A marker placed after the full stop ("… in 1889. [2] It is…") attaches to the next sentence.
+    - Paraphrased sentences can fail against a passage that really does support them.
+  example:
+    samples:
+      - output: "The Eiffel Tower is in Paris [1]. It was completed in 1889 [2]."
+        contexts:
+          - "The Eiffel Tower is a wrought-iron tower in Paris, completed in 1889."
+          - "It is 330 metres tall."
+    value: 0.5
+    note: "[1] supports the first sentence; the second sentence cites [2], which says nothing about 1889."
+  related: [citation_coverage, faithfulness]
+  references:
+    - citation: "Gao, T., Yen, H., Yu, J., and Chen, D. (2023). Enabling Large Language Models to Generate Text with Citations. Proceedings of EMNLP 2023."
+      url: https://arxiv.org/abs/2305.14627
+
+citation_coverage:
+  summary: The share of answer sentences that carry at least one inline citation `[n]`.
+  measures: >-
+    How thoroughly an answer cites its sources. It answers "what fraction of the sentences point to a source at
+    all?" It does not check whether the citations are right; that is `citation_accuracy`.
+  method: |
+    1. Split the answer into sentences with the rule-based splitter.
+    2. Count the sentences containing a marker of the form `[n]`.
+    3. The score is cited sentences ÷ sentences. An empty answer is skipped.
+
+    Gao et al.'s citation recall asks whether each statement is *supported* by its citations (checked with an NLI
+    model). This metric only checks that a citation is present, which makes it a cheap, model-free lower bar.
+  formula: |
+    citation_coverage = |{s ∈ sentences(output) : s contains [n]}| / |sentences(output)|
+  inputs: "`output` only."
+  params: {}
+  interpret: >-
+    0–1, higher is better when your product requires citations. 1.0 means every sentence cites something. Sentences
+    that need no source (greetings, transitions, "Here is what I found:") lower it, so a sensible target is often
+    below 1.0; read it together with `citation_accuracy`.
+  use_when:
+    - Enforcing a "cite every factual sentence" instruction.
+    - Catching prompt or model changes that silently stop the model from citing.
+  pitfalls:
+    - Presence is not correctness: citing `[1]` everywhere scores 1.0. Always pair with `citation_accuracy`.
+    - "Markers `[n]` and grouped `[1, 2]` count; ranges such as `[1-2]` and footnote styles (`^1`, `(1)`) do not."
+    - A marker placed after the full stop is counted for the following sentence.
+    - Non-factual sentences count in the denominator.
+  example:
+    samples:
+      - output: "The Eiffel Tower is in Paris [1]. It was completed in 1889. It is 330 metres tall [2]."
+    value: 0.6667
+    note: Two of the three sentences carry a citation.
+  related: [citation_accuracy, faithfulness]
+  references:
+    - citation: "Gao, T., Yen, H., Yu, J., and Chen, D. (2023). Enabling Large Language Models to Generate Text with Citations. Proceedings of EMNLP 2023."
+      url: https://arxiv.org/abs/2305.14627
+
+answer_correctness:
+  summary: Claim-level F1 between the answer and the reference answer, i.e. how many of the answer's claims the reference backs and how many of the reference's claims the answer covers.
+  measures: >-
+    Whether the answer says what the reference says, at the level of facts rather than exact wording. It answers
+    "is the answer right and complete compared with the known-good answer?" Precision penalises extra, unbacked
+    claims; recall penalises missing ones.
+  method: |
+    1. Split both the answer and the first reference into claims with the rule-based splitter. If either has no
+       claims, the sample is skipped.
+    2. Precision: the share of answer claims whose lexical support in the whole reference text is ≥ `threshold`.
+    3. Recall: the share of reference claims whose lexical support in the whole answer text is ≥ `threshold`.
+       (Support is the function described under `faithfulness`, including the cap at 0.5 for a number the other
+       text does not contain.)
+    4. If the reference has four content words or fewer (for example "Paris" or "6 dollars per month"), it is
+       treated as a fact to find, and the score is recall alone. Otherwise the score is the F1 of precision and
+       recall.
+
+    Claim-level scoring follows the atomic-fact idea of FActScore, which uses a model to extract and verify facts.
+    Here both steps are rule-based and lexical, and no model is called, even when a judge is configured; use
+    `judge` with `criterion: correctness` for a model's verdict.
+  formula: |
+    A = claims(output), R = claims(expected[0])
+    P = |{a ∈ A : support(a, join(R)) ≥ threshold}| / |A|
+    Rc = |{r ∈ R : support(r, join(A)) ≥ threshold}| / |R|
+    answer_correctness = Rc                       if |content_words(expected[0])| ≤ 4
+                       = 2·P·Rc / (P + Rc)         otherwise   (0 when P + Rc = 0)
+  inputs: "`output` and `expected` (only the first reference is used)."
+  params:
+    threshold: Minimum lexical support for a claim to count as matched (default 0.6).
+  interpret: >-
+    0–1, higher is better. 1.0 means every answer claim is in the reference and every reference claim is in the
+    answer. Details show precision and recall separately: low precision with high recall means the answer is right
+    but adds unbacked material (which may be fine, or may be hallucination); low recall means it misses facts.
+  use_when:
+    - Question answering with written reference answers longer than a single entity.
+    - Regression tests where answers should keep the same facts but may change wording slightly.
+  pitfalls:
+    - Paraphrases that share few words with the reference fail; use `judge` with `criterion: correctness` when wording varies a lot.
+    - Negation is invisible ("is not refundable" matches "is refundable").
+    - Extra true information the reference does not mention lowers precision.
+    - The short-reference rule switches to recall only, so verbose answers to short references are not penalised; check `exact_match`-style metrics if brevity matters.
+  example:
+    samples:
+      - output: "The Eiffel Tower is in Paris. It was completed in 1889. It is the tallest building in France."
+        expected: "The Eiffel Tower is in Paris. It was completed in 1889. Gustave Eiffel's company designed it."
+    value: 0.6667
+    note: Precision 2/3 (the "tallest building" claim is not in the reference) and recall 2/3 (the designer is missing), so F1 = 0.667.
+  related: [faithfulness, semantic_similarity, bertscore, judge]
+  references:
+    - citation: "Min, S., Krishna, K., Lyu, X., Lewis, M., Yih, W., Koh, P. W., Iyyer, M., Zettlemoyer, L., and Hajishirzi, H. (2023). FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation. Proceedings of EMNLP 2023."
+      url: https://arxiv.org/abs/2305.14251
+    - citation: "Es, S., James, J., Espinosa-Anke, L., and Schockaert, S. (2024). Automated Evaluation of Retrieval Augmented Generation. Proceedings of EACL 2024: System Demonstrations."
+      url: https://arxiv.org/abs/2309.15217

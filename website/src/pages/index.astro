@@ -72,23 +72,7 @@ const href = (h: string) => (/^https?:/.test(h) ? h : `${base}${h.replace(/^\//,
 
   <h2 data-reveal>In your terminal and your CI</h2>
   <p data-reveal>Real output: the fixture project from the acceptance suite, then the demo's two assistant versions.</p>
-  <pre class="terminal" data-reveal><span class="p">$</span> guage run --gate faithfulness:min=0.85 --gate recall@3:min=0.8:warn
- metric           value   95% CI          n
- faithfulness ↑   1.000   1.000 – 1.000   24
- recall@3 ↑       0.958   0.875 – 1.000   24
- mrr ↑            0.882   0.750 – 0.979   24
- token_f1 ↑       0.413   0.288 – 0.529   24
-Gate: <span class="ok">PASS</span>
-  <span class="ok">✓</span> faithfulness: 1 meets ≥ 0.85
-  <span class="ok">✓</span> recall@3: 0.9583 meets ≥ 0.8
-
-<span class="p">$</span> guage compare runs/rag_v1_run.json runs/rag_v2_run.json
- metric             before   after     Δ        95% CI          p (Holm)
- faithfulness       0.549    0.822     0.273    0.125 – 0.412   0.009    <span class="ok">improved</span>
- context_precision  0.586    0.829     0.243    0.097 – 0.384   0.009    <span class="ok">improved</span>
- recall@3           0.681    0.875     0.194    0.042 – 0.333   0.065    <span class="dim">inconclusive</span>
- mrr                0.636    0.845     0.208    0.081 – 0.330   0.009    <span class="ok">improved</span>
- latency_p95        1,067    829.600   -237.7                   –        <span class="dim">changed</span></pre>
+  <img class="terminal-svg" data-reveal src={`${base}terminal.svg`} width="860" height="410" alt="A terminal session: guage run gates faithfulness and recall@3 and passes; guage compare shows which metrics improved between two versions, with Holm-corrected p-values." />
 
   <h2 data-reveal>What's inside</h2>
   <div class="grid-cards">

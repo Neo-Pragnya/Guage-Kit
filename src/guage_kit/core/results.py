@@ -24,6 +24,9 @@ class Score(BaseModel):
 
 
 class SampleResult(BaseModel):
+    """One sample's outcome in a run: its input, output and expected value as evaluated, its tags, a
+    :class:`Score` per metric, the target's error if it failed, and its latency."""
+
     sample_id: str
     input: Any = None
     output: Any = None
@@ -82,6 +85,9 @@ class GateRule(BaseModel):
 
 
 class GateCheck(BaseModel):
+    """The result of one gate rule: the metric's value, the rule it was checked against, whether it passed and a
+    human-readable message."""
+
     metric: str
     value: float | None
     rule: GateRule
@@ -90,6 +96,9 @@ class GateCheck(BaseModel):
 
 
 class GateResult(BaseModel):
+    """A run's verdict (``PASS``, ``WARN``, ``REVIEW`` or ``BLOCK``), decided by Ananke Plexus's gate policy,
+    with every check and the evidence files written for it."""
+
     verdict: Verdict
     checks: list[GateCheck] = Field(default_factory=list)
     evidence: list[str] = Field(default_factory=list)
@@ -101,6 +110,9 @@ class GateResult(BaseModel):
 
 
 class Environment(BaseModel):
+    """Where a run happened: Guage Kit, Ananke Plexus and Python versions, platform and git state (recorded in
+    every run so results can be reproduced and compared fairly)."""
+
     guage_kit: str
     ananke_plexus: str | None = None
     python: str = ""

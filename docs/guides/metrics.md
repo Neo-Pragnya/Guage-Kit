@@ -7,24 +7,25 @@ description: Metric families, naming and parameters, thresholds, sample versus c
 
 Every metric is a plain function with a declaration: its family, the sample fields it needs, whether higher is
 better, its range, and its configurable parameters. `guage metrics list` shows them all, `guage metrics show <name>`
-shows one, and the [metric reference](../reference/metrics.md) lists every one with its parameters.
+shows one, and the [metric reference](../reference/metrics.md) documents every one in full: how it is computed, how to read it,
+its pitfalls, a worked example and the papers behind it.
 
 ## Families
 
-| Family | What it covers | Guide |
-| --- | --- | --- |
-| `text` | matching, token F1, BLEU, chrF, ROUGE, edit distance, length, readability, diversity | this page |
-| `semantic` | embedding similarity, BERTScore-style matching | [Embeddings](embeddings.md) |
-| `rag` | faithfulness, hallucination rate, context precision, recall, relevance and utilisation, answer relevancy and correctness, citations | [RAG](rag.md) |
-| `retrieval` | precision, recall, hit rate, MRR, MAP, nDCG, R-precision | [RAG](rag.md) |
-| `classification`, `calibration` | accuracy, F1, kappa, MCC, ECE, Brier, selective AUROC | [Classification](classification-and-calibration.md) |
-| `embeddings` | STS correlation, alignment, uniformity, anisotropy | [Embeddings](embeddings.md) |
-| `structured` | JSON and YAML validity, JSON Schema, field accuracy, Python syntax | this page |
-| `agent` | tool-call F1, arguments, sequence, errors, redundancy, goal success | [Agents](agents.md) |
-| `ananke.*` | 77 agent-trace evaluators from Ananke Plexus | [Agents](agents.md) |
-| `safety` | refusal, PII, secrets, injection, system-prompt leakage, toxicity, counterfactual consistency | [Safety](safety-and-red-teaming.md) |
-| `runtime` | latency, tokens, cost | this page |
-| `judge` | an LLM judge's grade on a criterion | [Judges](judges.md) |
+| Family | What it covers | Guide | Reference |
+| --- | --- | --- | --- |
+| `text` | matching, token F1, BLEU, chrF, ROUGE, edit distance, length, readability, diversity | this page | [text](../reference/metrics/text.md) |
+| `semantic` | embedding similarity, BERTScore-style matching | [Embeddings](embeddings.md) | [semantic](../reference/metrics/semantic.md) |
+| `rag` | faithfulness, hallucination rate, context precision, recall, relevance and utilisation, answer relevancy and correctness, citations | [RAG](rag.md) | [rag](../reference/metrics/rag.md) |
+| `retrieval` | precision, recall, hit rate, MRR, MAP, nDCG, R-precision | [RAG](rag.md) | [retrieval](../reference/metrics/retrieval.md) |
+| `classification`, `calibration` | accuracy, F1, kappa, MCC, ECE, Brier, selective AUROC | [Classification](classification-and-calibration.md) | [classification](../reference/metrics/classification.md), [calibration](../reference/metrics/calibration.md) |
+| `embeddings` | STS correlation, alignment, uniformity, anisotropy | [Embeddings](embeddings.md) | [embeddings](../reference/metrics/embeddings.md) |
+| `structured` | JSON and YAML validity, JSON Schema, field accuracy, Python syntax | this page | [structured](../reference/metrics/structured.md) |
+| `agent` | tool-call F1, arguments, sequence, errors, redundancy, goal success | [Agents](agents.md) | [agent](../reference/metrics/agent.md) |
+| `ananke.*` | 77 agent-trace evaluators from Ananke Plexus | [Agents](agents.md) | [ananke](../reference/metrics/ananke.md) |
+| `safety` | refusal, PII, secrets, injection, system-prompt leakage, toxicity, counterfactual consistency | [Safety](safety-and-red-teaming.md) | [safety](../reference/metrics/safety.md) |
+| `runtime` | latency, tokens, cost | this page | [runtime](../reference/metrics/runtime.md) |
+| `judge` | an LLM judge's grade on a criterion | [Judges](judges.md) | [judge](../reference/metrics/judge.md) |
 
 The text metrics are implemented in Guage Kit and tested against reference implementations: BLEU, chrF and chrF++
 match sacreBLEU, and ROUGE matches rouge-score (ROUGE's `tokenizer="unicode"` keeps non-ASCII words, which the

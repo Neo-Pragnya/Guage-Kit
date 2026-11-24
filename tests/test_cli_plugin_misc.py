@@ -57,7 +57,7 @@ def test_cli_metrics_data_probe_synth_demo(tmp_path: Path, monkeypatch: pytest.M
     monkeypatch.chdir(tmp_path)
     items = json.loads(invoke("metrics", "list", "--json").output)  # type: ignore[attr-defined]
     assert len(items) > 150 and any(i["family"].startswith("ananke.") for i in items)
-    assert json.loads(invoke("metrics", "show", "bleu").output)["level"] == "corpus"  # type: ignore[attr-defined]
+    assert json.loads(invoke("metrics", "show", "bleu", "--json").output)["level"] == "corpus"  # type: ignore[attr-defined]
     Dataset(
         [Sample(id=str(i), input=f"Question {i}?", output="a", expected="a") for i in range(6)]
     ).save(tmp_path / "d.jsonl")

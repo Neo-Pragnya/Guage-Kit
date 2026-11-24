@@ -12,6 +12,9 @@ from guage_kit.errors import GuageError
 
 
 class RunStore:
+    """Saved runs under ``.guage/runs`` and named baselines under ``.guage/baselines``. ``load`` accepts a run id,
+    a path, ``latest``, ``latest~N`` or ``baseline:<name>``."""
+
     def __init__(self, root: str | Path = ".guage/runs") -> None:
         self.root = Path(root)
 
@@ -86,6 +89,8 @@ class RunStore:
 
 
 def load_run(ref: str | Path | RunResult, root: str | Path = ".guage/runs") -> RunResult:
+    """Load a run from a reference (run id, path, ``latest``, ``latest~N`` or ``baseline:<name>``); a
+    :class:`RunResult` is returned unchanged."""
     if isinstance(ref, RunResult):
         return ref
     return RunStore(root).load(ref)

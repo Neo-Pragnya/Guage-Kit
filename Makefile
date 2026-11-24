@@ -1,4 +1,5 @@
-.PHONY: install lint format format-check typecheck test coverage verify docs-metrics licenses build build-check \
+# docs-generate regenerates the metric reference, the API reference and the homepage terminal SVG.
+.PHONY: docs-generate install lint format format-check typecheck test coverage verify docs-metrics licenses build build-check \
         scan scan-dist acceptance acceptance-wheel acceptance-dist demo site publish-testpypi publish-pypi clean check-uv
 
 UV := uv
@@ -31,8 +32,10 @@ coverage:
 	$(UV) run coverage xml -q
 	$(UV) run coverage report --fail-under=85
 
-docs-metrics:
+docs-metrics docs-generate:
 	$(UV) run python scripts/gen_metric_docs.py
+	$(UV) run python scripts/gen_api_docs.py
+	python3 scripts/gen_terminal_svg.py
 
 # Every runtime dependency (and the optional extras) must be permissively licensed.
 licenses:
@@ -40,6 +43,8 @@ licenses:
 
 verify: lint format-check typecheck test licenses
 	$(UV) run python scripts/gen_metric_docs.py --check
+	$(UV) run python scripts/gen_api_docs.py --check
+	python3 scripts/gen_terminal_svg.py --check
 
 # ── Build and scan ─────────────────────────────────────────────────────────
 build: check-uv

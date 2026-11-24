@@ -111,8 +111,13 @@ def test_metrics_listing_text() -> None:
     assert r.exit_code == 0 and "bleu" in r.output and "metrics" in r.output
     r = invoke("metrics", "list", "--family", "judge")
     assert r.exit_code == 0 and "judge" in r.output
-    r = invoke("metrics", "show", "bleu")
+    r = invoke("metrics", "show", "bleu", "--json")
     assert r.exit_code == 0 and json.loads(r.output)["name"] == "bleu"
+    assert json.loads(r.output)["card"]["references"]
+    r = invoke("metrics", "show", "bleu")
+    assert r.exit_code == 0 and "How it is computed" in r.output and "Papineni" in r.output
+    r = invoke("metrics", "show", "ananke.trajectory.loop_detection")
+    assert r.exit_code == 0 and "Passes when" in r.output
 
 
 def test_data_commands(project: Path) -> None:
@@ -235,3 +240,9 @@ def test_parse_gate(text: str, expected: dict[str, object]) -> None:
 def test_parse_gate_rejects(text: str) -> None:
     with pytest.raises(GuageError):
         _parse_gate(text)
+
+
+def test_every_perturbation_is_described() -> None:
+    from guage_kit.probes import PERTURBATION_DESCRIPTIONS, PERTURBATIONS
+
+    assert set(PERTURBATION_DESCRIPTIONS) == set(PERTURBATIONS)

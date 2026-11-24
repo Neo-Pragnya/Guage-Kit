@@ -124,6 +124,7 @@ def embedding_cosine(sample: Sample, *, ctx: MetricContext | None = None) -> flo
     family=_F,
     requires_any=("embeddings", "output"),
     higher_is_better=False,
+    needs_embedder=True,  # embeds input and output when no vectors are given
     value_range=(0.0, 4.0),
     reference="Wang & Isola (2020)",
 )
@@ -141,6 +142,7 @@ def alignment(samples: list[Sample], *, ctx: MetricContext | None = None) -> flo
     family=_F,
     requires_any=("embeddings", "output"),
     higher_is_better=False,
+    needs_embedder=True,  # embeds input and output when no vectors are given
     value_range=(None, 0.0),
     reference="Wang & Isola (2020)",
 )
@@ -170,6 +172,7 @@ def uniformity(
     family=_F,
     requires_any=("embeddings", "output"),
     higher_is_better=False,
+    needs_embedder=True,  # embeds input and output when no vectors are given
     value_range=(-1.0, 1.0),
     reference="Ethayarajh (2019)",
 )

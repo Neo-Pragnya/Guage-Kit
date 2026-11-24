@@ -23,6 +23,10 @@ Direction = Literal["improved", "regressed", "unchanged", "inconclusive", "chang
 
 
 class MetricDelta(BaseModel):
+    """How one metric changed between two runs: both values, the difference with its bootstrap interval, the
+    Holm-adjusted p-value, effect size, win/loss counts and a direction (improved, regressed, unchanged,
+    inconclusive, or changed for corpus metrics)."""
+
     metric: str
     level: str = "sample"
     higher_is_better: bool = True
@@ -42,6 +46,9 @@ class MetricDelta(BaseModel):
 
 
 class SampleDelta(BaseModel):
+    """One sample's change on one metric between two runs, with both outputs (used for the largest
+    regressions and improvements)."""
+
     sample_id: str
     metric: str
     a: float
@@ -53,6 +60,9 @@ class SampleDelta(BaseModel):
 
 
 class Comparison(BaseModel):
+    """The result of comparing two runs: per-metric deltas, the largest per-sample regressions and
+    improvements, whether both runs used the same data, and an optional pairwise judge verdict."""
+
     schema_: str = Field(default="guage-kit/comparison@1", alias="schema")
     run_a: dict[str, Any]
     run_b: dict[str, Any]

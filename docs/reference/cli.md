@@ -109,8 +109,11 @@ List every metric: name, family, level, required fields (and whether it needs a 
 
 ## guage metrics show NAME
 
-Print one metric's declaration as JSON: family, level, description, required fields, direction, range, determinism,
-judge or embedder needs, extra, parameters with defaults, reference and source.
+Print one metric's card: what it measures, how it is computed (with the formula), its parameters and their
+meaning, how to read the value, pitfalls and references. Works for Ananke evaluators too
+(`guage metrics show ananke.trajectory.loop_detection`). `--json` prints the declaration (family, level, required
+fields, direction, range, determinism, judge or embedder needs, extra, parameters, reference, source) with the card
+under `card`. The same content is in the [metric reference](metrics.md).
 
 ## guage data validate PATH
 

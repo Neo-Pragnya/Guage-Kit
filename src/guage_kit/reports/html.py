@@ -61,6 +61,8 @@ def _clip(v: Any) -> Any:
 def view_model(
     run: RunResult, *, comparison: Any = None, profile: str = "private", title: str | None = None
 ) -> dict[str, Any]:
+    """The data a report renders, as plain JSON: run summary, metrics, slices, samples, comparison and
+    environment. The ``public`` profile removes sample text."""
     if profile not in ("private", "public"):
         raise GuageError("GK-REPORT-001", f"unknown profile {profile!r}", hint="private or public")
     public = profile == "public"
@@ -156,6 +158,8 @@ def _csp_hash(text: str) -> str:
 
 
 def render_html(model: dict[str, Any]) -> str:
+    """Render a view model into one self-contained, offline HTML page (inline assets, a strict
+    Content-Security-Policy and an embedded manifest)."""
     manifest = {
         "schema": "guage-kit/report-manifest@1",
         "renderer": RENDERER,

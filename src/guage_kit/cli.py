@@ -520,14 +520,49 @@ def metrics_list(
 
 
 @metrics_app.command("show")
-def metrics_show(name: str) -> None:
-    """Show one metric's declaration and parameters."""
+def metrics_show(
+    name: str,
+    as_json: bool = typer.Option(False, "--json", help="Print the declaration and card as JSON."),
+) -> None:
+    """Show one metric: its declaration, what it measures, how it is computed, pitfalls and references."""
+    from guage_kit.metrics.cards import get_card
     from guage_kit.metrics.registry import get_metric
 
     try:
-        out.print_json(json.dumps(get_metric(name).describe(), default=str))
+        info = get_metric(name).describe()
     except GuageError as exc:
         _fail(exc)
+        return
+    card = get_card(info["name"]) or {}
+    if as_json:
+        out.print_json(json.dumps({**info, "card": card}, default=str))
+        return
+    arrow = "higher" if info["higher_is_better"] else "lower"
+    out.print(
+        f"[bold]{info['name']}[/bold]  [dim]{info['family']} · {info['level']} · {arrow} is better[/dim]"
+    )
+    out.print(card.get("summary") or info["description"])
+    for key, label in (("measures", "What it measures"), ("method", "How it is computed")):
+        if card.get(key):
+            out.print(f"\n[bold]{label}[/bold]\n{card[key].strip()}")
+    if card.get("formula"):
+        out.print(f"\n{card['formula'].rstrip()}", markup=False)
+    if info["params"]:
+        out.print("\n[bold]Parameters[/bold]")
+        for p, default in info["params"].items():
+            meaning = (card.get("params") or card.get("arguments") or {}).get(p, "")
+            out.print(f"  {p} = {default!r}  {meaning}", markup=False)
+    for key, label in (("interpret", "How to read it"), ("passes_when", "Passes when")):
+        if card.get(key):
+            out.print(f"\n[bold]{label}[/bold]\n{card[key].strip()}")
+    if card.get("pitfalls"):
+        out.print("\n[bold]Pitfalls[/bold]")
+        for item in card["pitfalls"]:
+            out.print(f"  • {item}", markup=False)
+    if card.get("references"):
+        out.print("\n[bold]References[/bold]")
+        for ref in card["references"]:
+            out.print(f"  {ref['citation']} {ref.get('url', '')}".rstrip(), markup=False)
 
 
 @data_app.command("validate")

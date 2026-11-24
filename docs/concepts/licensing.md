@@ -61,9 +61,9 @@ It lists weak copyleft (MPL) separately, and with `--strict` it also fails on un
 ## Metric definitions
 
 Each metric is an independent implementation of a published definition, and its declaration cites the source
-(`guage metrics show <name>`, field `reference`): for example Papineni et al. (2002) for BLEU, Lin (2004) for ROUGE,
+(`guage metrics show <name>` and the [metric reference](../reference/metrics.md) list every source): for example Papineni et al. (2002) for BLEU, Lin (2004) for ROUGE,
 Popović (2015, 2017) for chrF, Järvelin and Kekäläinen (2002) for nDCG, and Naeini et al. (2015) and Guo et al. (2017)
-for calibration error. Faithfulness, context precision and recall, and answer relevancy are named after the
-definitions of Es et al. (2023), but implemented here with Guage Kit's own claim splitting and support function. No
+for calibration error. Faithfulness and answer relevancy follow the definitions of Es et al. (2024), and context
+precision and recall are adapted from the same framework, but all are implemented here with Guage Kit's own claim splitting and support function. No
 third-party code is vendored. The red-team probes, criteria rubrics, word lists and demo content were written for this
 project.

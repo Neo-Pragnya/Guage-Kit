@@ -109,6 +109,8 @@ def junit(run: RunResult) -> str:
 def write_all(
     run: RunResult, out_dir: str | Path, *, comparison: Any = None, profile: str = "private"
 ) -> dict[str, Path]:
+    """Write every report for a run into a folder: ``report.html``, ``summary.md``, ``junit.xml`` and
+    ``run.json``. Returns their paths by kind."""
     d = Path(out_dir)
     d.mkdir(parents=True, exist_ok=True)
     return {

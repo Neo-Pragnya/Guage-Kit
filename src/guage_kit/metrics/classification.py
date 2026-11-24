@@ -254,6 +254,7 @@ def mce(samples: list[Sample], *, n_bins: int = 10) -> float | None:
     requires=("expected",),
     requires_any=_CAL_ANY,
     higher_is_better=False,
+    value_range=(0.0, 2.0),  # the multi-class form reaches 2
     reference="Brier (1950)",
 )
 def brier(sample: Sample) -> float | None:

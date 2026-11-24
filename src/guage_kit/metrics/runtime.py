@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 from guage_kit.core.sample import Sample
+from guage_kit.errors import GuageError
 from guage_kit.metrics.registry import CorpusOutput, corpus_metric, metric
 
 _F = "runtime"
@@ -43,6 +44,8 @@ def sample_cost(sample: Sample, prices: dict[str, Any] | None = None) -> float |
         return sample.usage.cost_usd
     model = str(sample.metadata.get("model") or "")
     if prices and model in prices:
+        if sample.usage.prompt_tokens is None and sample.usage.completion_tokens is None:
+            return None  # only a total is known: input and output prices differ, so it cannot be priced
         pin, pout = prices[model]
         return (
             (sample.usage.prompt_tokens or 0) * float(pin)
@@ -58,6 +61,10 @@ def cost_usd(sample: Sample, *, prices: dict[str, Any] | None = None) -> float |
 
 
 def _percentile(values: list[float], p: float) -> float:
+    if not 0 <= p <= 100:
+        raise GuageError(
+            "GK-METRIC-002", f"percentile {p} is outside 0–100", hint="latency_p95@99 for p99"
+        )
     s = sorted(values)
     idx = (len(s) - 1) * p / 100
     lo = int(idx)

@@ -28,9 +28,14 @@ def _cut(ids: list[str], k: int) -> list[str]:
 
 
 @metric("precision", family=_F, requires=_REQ, requires_any=_ANY)
-def precision_at_k(sample: Sample, *, k: int = 10) -> float:
-    """Share of the top-k retrieved ids that are relevant (divides by k, even when fewer were retrieved)."""
+def precision_at_k(sample: Sample, *, k: int = 10) -> float | None:
+    """Share of the top-k retrieved ids that are relevant (divides by k, even when fewer were retrieved).
+
+    Skipped when the sample has no relevant ids, like every other ranking metric (a query without relevant
+    documents cannot be scored)."""
     rel = _relevant(sample)
+    if not rel:
+        return None
     top = _cut(sample.retrieved_ids, k)
     denom = k if k > 0 else len(top)
     return sum(1 for d in top if d in rel) / denom if denom else 0.0
@@ -46,16 +51,22 @@ def recall_at_k(sample: Sample, *, k: int = 10) -> float | None:
 
 
 @metric("hit_rate", family=_F, requires=_REQ, requires_any=_ANY)
-def hit_rate(sample: Sample, *, k: int = 10) -> float:
-    """1 when at least one relevant id is in the top k (also called success@k)."""
+def hit_rate(sample: Sample, *, k: int = 10) -> float | None:
+    """1 when at least one relevant id is in the top k (also called success@k). Skipped without relevant ids."""
     rel = _relevant(sample)
+    if not rel:
+        return None
     return float(any(d in rel for d in _cut(sample.retrieved_ids, k)))
 
 
 @metric("mrr", family=_F, requires=_REQ, requires_any=_ANY, reference="Voorhees (1999)")
-def mrr(sample: Sample, *, k: int = 0) -> float:
-    """Reciprocal rank of the first relevant id (0 when none is retrieved). The run value is the mean (MRR)."""
+def mrr(sample: Sample, *, k: int = 0) -> float | None:
+    """Reciprocal rank of the first relevant id (0 when none is retrieved). The run value is the mean (MRR).
+
+    Skipped when the sample has no relevant ids."""
     rel = _relevant(sample)
+    if not rel:
+        return None
     for rank, d in enumerate(_cut(sample.retrieved_ids, k), 1):
         if d in rel:
             return 1.0 / rank
