@@ -4,9 +4,10 @@
 Deterministic metrics first, LLM judges when you want them, real statistics, quality gates for CI, and one offline
 HTML report per run. Built on the [Ananke Plexus](https://github.com/Neo-Pragnya/Ananke-Plexus) evaluation harness.**
 
-[![PyPI](https://img.shields.io/pypi/v/guage-kit.svg)](https://pypi.org/project/guage-kit/)
-[![Python](https://img.shields.io/pypi/pyversions/guage-kit.svg)](https://pypi.org/project/guage-kit/)
-[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/guage-kit?label=PyPI&color=blue)](https://pypi.org/project/guage-kit/)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](https://pypi.org/project/guage-kit/)
+[![CI](https://github.com/Neo-Pragnya/Guage-Kit/actions/workflows/ci.yml/badge.svg)](https://github.com/Neo-Pragnya/Guage-Kit/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/LICENSE)
 [![Docs](https://img.shields.io/badge/docs-website-teal.svg)](https://neo-pragnya.github.io/Guage-Kit/)
 
 ```bash
@@ -75,17 +76,17 @@ pip install "guage-kit[all]"                 # anthropic, embeddings, jsonschema
 ```
 
 Python 3.11–3.14. Every runtime dependency is permissively licensed (Apache-2.0, MIT, BSD, ISC, PSF; certifi is
-MPL-2.0); `make licenses` checks it. See [licensing](docs/concepts/licensing.md).
+MPL-2.0); `make licenses` checks it. See [licensing](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/docs/concepts/licensing.md).
 
 ## Documentation
 
-The full documentation is on the [website](https://neo-pragnya.github.io/Guage-Kit/) and in [docs/](docs/index.md):
-[getting started](docs/guides/getting-started.md) · [datasets](docs/guides/datasets.md) ·
-[targets](docs/guides/targets.md) · [metrics](docs/guides/metrics.md) · [RAG](docs/guides/rag.md) ·
-[agents](docs/guides/agents.md) · [judges](docs/guides/judges.md) · [statistics](docs/guides/statistics.md) ·
-[gates and CI](docs/guides/gates-and-ci.md) · [reports](docs/guides/reports.md) · [pytest](docs/guides/pytest.md) ·
-[safety and red teaming](docs/guides/safety-and-red-teaming.md) · [CLI](docs/reference/cli.md) ·
-[metric catalogue](docs/reference/metrics.md) · [configuration](docs/reference/configuration.md).
+The full documentation is on the [website](https://neo-pragnya.github.io/Guage-Kit/) and in [docs/](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/docs/index.md):
+[getting started](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/docs/guides/getting-started.md) · [datasets](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/docs/guides/datasets.md) ·
+[targets](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/docs/guides/targets.md) · [metrics](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/docs/guides/metrics.md) · [RAG](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/docs/guides/rag.md) ·
+[agents](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/docs/guides/agents.md) · [judges](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/docs/guides/judges.md) · [statistics](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/docs/guides/statistics.md) ·
+[gates and CI](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/docs/guides/gates-and-ci.md) · [reports](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/docs/guides/reports.md) · [pytest](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/docs/guides/pytest.md) ·
+[safety and red teaming](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/docs/guides/safety-and-red-teaming.md) · [CLI](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/docs/reference/cli.md) ·
+[metric catalogue](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/docs/reference/metrics.md) · [configuration](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/docs/reference/configuration.md).
 
 ## How it relates to Ananke Plexus
 
@@ -93,7 +94,7 @@ Ananke Plexus owns the canonical evaluation model (cases, agent traces, scores),
 policy engine and evidence bundles. Guage Kit builds the evaluation product on top: the metric library, judges,
 statistics, the runner, reports, CLI and pytest plugin. Results convert both ways, so a Guage Kit run can be filed as
 Ananke evidence and gated by the same policy as the rest of an Ananke-governed project. See
-[architecture](docs/concepts/architecture.md).
+[architecture](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/docs/concepts/architecture.md).
 
 ## Development
 
@@ -104,4 +105,4 @@ make acceptance   # 47 capability scenarios driving the real CLI; the release ga
 make scan         # build and scan the wheel and sdist the way package firewalls do
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md). Licensed under [Apache-2.0](LICENSE).
+See [CONTRIBUTING.md](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/CONTRIBUTING.md) and [AGENTS.md](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/AGENTS.md). Licensed under [Apache-2.0](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/LICENSE).

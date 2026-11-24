@@ -45,3 +45,16 @@ def test_no_package_file_is_git_ignored() -> None:
         check=False,
     )
     assert r.stdout.strip() == "", f"ignored package files: {r.stdout}"
+
+
+def test_readme_renders_on_pypi() -> None:
+    """PyPI shows the README without the repository: relative links and images break there, and the dynamic
+    pyversions badge is unreliable, so links must be absolute and the Python badge static."""
+    import re
+
+    text = (ROOT / "README.md").read_text(encoding="utf-8")
+    relative = re.findall(r"\]\((?!https?://|#)([^)]+)\)", text) + re.findall(
+        r'src="(?!https?://)([^"]+)"', text
+    )
+    assert not relative, f"relative links break on PyPI: {relative}"
+    assert "img.shields.io/pypi/pyversions" not in text
