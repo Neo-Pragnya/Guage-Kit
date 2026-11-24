@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="{{CSP}}">
+<meta name="referrer" content="no-referrer">
+<meta name="generator" content="guage-kit">
+<title>{{TITLE}}</title>
+<style>{{CSS}}</style>
+</head>
+<body>
+<div class="viz-root" id="app">
+  <header class="top">
+    <div class="brand">
+      <svg class="dial" viewBox="0 0 48 48" aria-hidden="true"><path class="dial-arc" d="M8 34 A18 18 0 1 1 40 34"/><path class="dial-needle" d="M24 30 L34 14"/><circle class="dial-hub" cx="24" cy="30" r="3.2"/></svg>
+      <div><div class="brand-name">Guage Kit</div><h1 id="title"></h1></div>
+    </div>
+    <div class="top-actions">
+      <button type="button" id="theme" class="ghost" aria-label="Switch light or dark theme">◐ Theme</button>
+    </div>
+  </header>
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+  <main id="main"></main>
+  <footer class="foot" id="foot"></footer>
+</div>
+<script type="application/json" id="guage-data">{{DATA}}</script>
+<script type="application/json" id="guage-manifest">{{MANIFEST}}</script>
+<script>{{JS}}</script>
+</body>
+</html>

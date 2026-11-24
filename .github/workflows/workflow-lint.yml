@@ -1,0 +1,29 @@
+name: workflow-lint
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  lint-workflows:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write  # zizmor uploads its findings
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Run actionlint
+        uses: raven-actions/actionlint@3d39aea434753780c3b3d4a1a31c854b4dbf49d7
+
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}

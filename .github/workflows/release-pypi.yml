@@ -1,0 +1,324 @@
+name: release-pypi
+
+# Triggered by a vX.Y.Z tag push.
+# Lint, type-check and test, build once, Trivy gate, attest, then publish via uv + OIDC Trusted Publishing.
+# Idempotent: if this version is already on PyPI (e.g. published with `make publish-pypi`), the publish step is
+# skipped and only the GitHub Release is created.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  # ── 1. Build ───────────────────────────────────────────────────────────────
+  build:
+    name: build artifacts
+    runs-on: ubuntu-latest
+    outputs:
+      published: ${{ steps.pypi.outputs.published }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081
+        with:
+          version: "latest"
+          enable-cache: false  # never restore caches into release builds (cache poisoning)
+
+      - name: Verify package version matches release tag
+        run: |
+          VERSION="$(uv run python -c 'from guage_kit.version import __version__; print(__version__)')"
+          TAG="${GITHUB_REF_NAME#v}"
+          echo "Package version: $VERSION"
+          echo "Release tag: $TAG"
+          if [ "$VERSION" != "$TAG" ]; then
+            echo "Version mismatch: package version ($VERSION) does not match tag ($TAG)."
+            exit 1
+          fi
+
+      - name: Already on PyPI?
+        id: pypi
+        run: |
+          code="$(curl -s -o /dev/null -w '%{http_code}' "https://pypi.org/pypi/guage-kit/${GITHUB_REF_NAME#v}/json")"
+          echo "published=$([ "$code" = 200 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Quality gate (lint, types, tests)
+        run: |
+          uv sync --extra dev
+          uv run ruff check src tests
+          uv run mypy
+          uv run pytest -q
+
+      - name: Build wheel and sdist
+        run: uv build
+
+      - name: Validate package metadata
+        run: uv run --with twine twine check dist/*
+
+      - name: Generate SBOM (CycloneDX)
+        run: |
+          uv run --with cyclonedx-bom cyclonedx-py environment \
+            --output-format json \
+            --output-file dist/sbom.cdx.json
+        continue-on-error: true
+
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: pypi-dist-${{ github.ref_name }}
+          path: dist/
+          if-no-files-found: error
+
+  # ── 1b. Capability acceptance on the exact wheel ───────────────────────────
+  acceptance:
+    name: acceptance gate (built wheel)
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081
+        with:
+          version: "latest"
+          enable-cache: false # release job: never restore a cache that a PR could have poisoned
+
+      - name: Download exact dist artifacts from build step
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: pypi-dist-${{ github.ref_name }}
+          path: dist/
+
+      - name: Run capability scenarios and the release gate
+        run: make acceptance-dist
+
+      - name: Upload acceptance report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: acceptance-report-${{ github.ref_name }}
+          path: acceptance/report/
+          if-no-files-found: warn
+
+  # ── 2. Trivy security gate ─────────────────────────────────────────────────
+  dist-scan:
+    name: distribution scan (what package firewalls check)
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081
+        with:
+          version: "latest"
+          enable-cache: false # release job: never restore a cache that a PR could have poisoned
+
+      - name: Install pinned scanners
+        env:
+          GITLEAKS_VERSION: "8.30.1"
+          GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+          GRYPE_VERSION: "0.121.0"
+          GRYPE_SHA256: "64e07133d3486115de647a66581461dccf5c732748a0a3119077395565f15519"
+          SYFT_VERSION: "1.55.0"
+          SYFT_SHA256: "bb65249542db5fedeeb4d3f9b018b75e7264dbfbbb10486f044581a92f90490d"
+          OSV_SCANNER_VERSION: "2.7.0"
+          OSV_SCANNER_SHA256: "160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b"
+        run: |
+          curl -sSLo gitleaks.tgz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tgz" | sha256sum -c -
+          mkdir -p "$HOME/.local/bin" && tar -xzf gitleaks.tgz -C "$HOME/.local/bin" gitleaks && rm gitleaks.tgz
+          # second-opinion CVE databases and the SBOM writer: without them the scan is degraded, and --require-all fails it
+          curl -sSLo grype.tgz "https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/grype_${GRYPE_VERSION}_linux_amd64.tar.gz"
+          echo "${GRYPE_SHA256}  grype.tgz" | sha256sum -c -
+          tar -xzf grype.tgz -C "$HOME/.local/bin" grype && rm grype.tgz
+          curl -sSLo syft.tgz "https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_linux_amd64.tar.gz"
+          echo "${SYFT_SHA256}  syft.tgz" | sha256sum -c -
+          tar -xzf syft.tgz -C "$HOME/.local/bin" syft && rm syft.tgz
+          curl -sSLo "$HOME/.local/bin/osv-scanner" "https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/osv-scanner_linux_amd64"
+          echo "${OSV_SCANNER_SHA256}  $HOME/.local/bin/osv-scanner" | sha256sum -c -
+          chmod +x "$HOME/.local/bin/osv-scanner"
+          uv tool install --python 3.12 guarddog==3.2.0
+          uv tool install --python 3.12 pip-audit==2.10.1
+          uv tool install --python 3.12 bandit==1.9.4
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Download exact dist artifacts from build step
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: pypi-dist-${{ github.ref_name }}
+          path: dist/
+
+      - name: Scan the wheel and sdist (secrets and vulnerable dependencies block)
+        run: python3 scripts/scan_dist.py --dist dist --out scan-report --require-all
+
+      - name: Upload scan report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: dist-scan-${{ github.ref_name }}
+          path: scan-report/
+          if-no-files-found: warn
+
+  trivy:
+    name: trivy security gate
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Install Trivy
+        env:
+          TRIVY_VERSION: "0.74.0"
+          TRIVY_SHA256: 2ae6fe3ee734b7fdf11335663e18c75ea12dccc76062f09f164a3b0f8be4371a
+        # curl retries, including failed DNS lookups: one bad lookup must not block a security release
+        run: |
+          curl --fail --silent --show-error --location --retry 6 --retry-all-errors --retry-delay 10 \
+            --output trivy.tar.gz \
+            "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          echo "${TRIVY_SHA256}  trivy.tar.gz" | sha256sum --check
+          mkdir -p "$HOME/.local/bin"
+          tar -xzf trivy.tar.gz -C "$HOME/.local/bin" trivy
+          rm trivy.tar.gz
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Trivy SARIF scan (package code + deps)
+        run: |
+          trivy fs \
+            --cache-dir .trivy-cache \
+            --ignorefile .trivyignore \
+            --skip-dirs website \
+            --ignore-unfixed \
+            --severity CRITICAL,HIGH,MEDIUM \
+            --format sarif \
+            --output trivy-results.sarif \
+            .
+
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@ed1a0fa18ac745d017ca370dd4ef08bba3b4f504
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+
+      - name: Trivy blocking gate (CRITICAL + HIGH, unfixed)
+        run: |
+          trivy fs \
+            --cache-dir .trivy-cache \
+            --ignorefile .trivyignore \
+            --skip-dirs website \
+            --ignore-unfixed \
+            --severity CRITICAL,HIGH \
+            --exit-code 1 \
+            .
+
+  # ── 3. Build provenance attestation ───────────────────────────────────────
+  provenance:
+    name: attest provenance
+    runs-on: ubuntu-latest
+    needs: [build, trivy]
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
+    steps:
+      - name: Download dist
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: pypi-dist-${{ github.ref_name }}
+          path: dist/
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8
+        with:
+          subject-path: "dist/*"
+
+  # ── 4. Publish to PyPI ─────────────────────────────────────────────────────
+  publish:
+    name: publish to PyPI
+    runs-on: ubuntu-latest
+    needs: [build, acceptance, dist-scan, trivy, provenance]
+    if: needs.build.outputs.published != 'true'
+    environment: pypi
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Download exact dist artifacts from build step
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: pypi-dist-${{ github.ref_name }}
+          path: dist/
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081
+        with:
+          version: "latest"
+          enable-cache: false  # never restore caches into release builds (cache poisoning)
+
+      - name: Drop non-distribution files
+        run: rm -f dist/sbom.cdx.json
+
+      - name: Publish to PyPI (OIDC Trusted Publishing)
+        id: publish_oidc
+        continue-on-error: true
+        run: uv publish --trusted-publishing always
+
+      - name: Publish to PyPI (token fallback)
+        if: ${{ steps.publish_oidc.outcome == 'failure' }}
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
+          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          TOKEN="${UV_PUBLISH_TOKEN:-$PYPI_API_TOKEN}"
+          if [ -z "$TOKEN" ]; then
+            echo "Trusted publishing failed and no token secret is configured."
+            echo "Configure a PyPI trusted publisher (see docs/guides/release.md) or set UV_PUBLISH_TOKEN."
+            exit 1
+          fi
+          uv publish --token "$TOKEN"
+
+  # ── 5. GitHub Release ──────────────────────────────────────────────────────
+  release:
+    name: github release
+    runs-on: ubuntu-latest
+    needs: [build, trivy, provenance, publish]
+    if: always() && needs.provenance.result == 'success' && needs.publish.result != 'failure'
+    permissions:
+      contents: write
+    steps:
+      - name: Download dist
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: pypi-dist-${{ github.ref_name }}
+          path: dist/
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --generate-notes --verify-tag --notes-file - <<NOTES
+          ## $TAG
+
+          Published to [PyPI](https://pypi.org/project/guage-kit/).
+          See [CHANGELOG.md](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/CHANGELOG.md) for details.
+          NOTES

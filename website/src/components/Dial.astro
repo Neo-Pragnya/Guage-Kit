@@ -1,0 +1,14 @@
+---
+// Guage Kit's sigil: a gauge arc with ticks and a needle that settles on a reading. Pure SVG + CSS.
+interface Props {
+  class?: string;
+}
+const { class: cls = "dial-mark" } = Astro.props;
+---
+
+<svg class={cls} viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+  <path class="dial-arc" d="M7 33 A18 18 0 1 1 41 33" />
+  <path class="dial-band" d="M33.5 13.2 A18 18 0 0 1 39.2 22.6" />
+  <path class="dial-needle" d="M24 30 L35 15" />
+  <circle class="dial-hub" cx="24" cy="30" r="3.4" />
+</svg>

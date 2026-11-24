@@ -1,26 +1,23 @@
-# Guage-Kit Security Policy
+# Security policy
 
-## Security Policy
+## Reporting a vulnerability
 
-This document outlines the security practices for the Guage-Kit project. We are committed to maintaining the security of our software and the data it processes.
+Report vulnerabilities privately through
+[GitHub security advisories](https://github.com/Neo-Pragnya/Guage-Kit/security/advisories/new). Please don't open a
+public issue. We aim to acknowledge reports within five working days.
 
-### Reporting Security Issues
+## What Guage Kit promises
 
-If you discover a security vulnerability in this project, please report it to us as soon as possible. We appreciate your help in improving the security of our project.
+- **Reports are inert.** An HTML report runs no command and makes no network request: its Content Security Policy
+  is `default-src 'none'` with the inline script and style allowed only by hash. Dataset and model text is shown as
+  text, never parsed as HTML. The `public` profile removes all sample text before sharing.
+- **Judge prompts separate instructions from content.** Evaluated text is placed in marked untrusted blocks that it
+  cannot close, with an instruction to treat it as data.
+- **Credentials stay in the environment.** API keys are read from environment variables (or the provider SDK's own
+  credential chain), never from `guage.yaml`, and are never written to runs, caches or reports. `guage doctor` says
+  only whether a key is set.
+- **Nothing runs that you didn't name.** Targets and providers are imported only from the module paths you give.
+  Metrics never execute model output (`python_syntax` parses, it doesn't run).
 
-1. **Email**: Send an email to [security@neo-pragnya.org](mailto:security@neo-pragnya.org) with a detailed description of the vulnerability.
-2. **Confidentiality**: Please do not disclose the vulnerability publicly until it has been addressed.
-
-### Security Practices
-
-- **Dependency Management**: We use UV for dependency management to ensure that all dependencies are up-to-date and secure.
-- **Code Reviews**: All code changes are reviewed by at least one other contributor to ensure that security best practices are followed.
-- **Testing**: We have a comprehensive testing strategy that includes unit tests, integration tests, and security tests to identify potential vulnerabilities.
-
-### Security Updates
-
-We will release security updates as needed. Users are encouraged to keep their installations up-to-date to benefit from the latest security fixes.
-
-### Acknowledgments
-
-We thank all contributors and security researchers who help us improve the security of Guage-Kit. Your efforts are greatly appreciated.
+Each release is checked by `make scan` (secrets, vulnerable dependencies, malicious-code heuristics), the licence
+check and the acceptance gate against the built wheel.
