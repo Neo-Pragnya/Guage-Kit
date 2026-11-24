@@ -33,6 +33,9 @@ from guage_kit.errors import GuageError
 
 
 class Reports(BaseModel):
+    """Which report files a suite writes (``html``, ``json``, ``junit``, ``markdown``), relative to the suite file,
+    and the privacy profile: ``private`` keeps sample text, ``public`` removes it."""
+
     model_config = ConfigDict(extra="forbid")
     html: str | None = None
     json_: str | None = Field(default=None, alias="json")
@@ -42,6 +45,9 @@ class Reports(BaseModel):
 
 
 class Suite(BaseModel):
+    """A ``guage.yaml`` suite: the dataset, the optional target, judge and embedder, the metrics (or ``auto``),
+    slices, gate rules, baseline, repeats and reports. Unknown keys are rejected so typos fail loudly."""
+
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     name: str = "evaluation"
@@ -71,6 +77,9 @@ class Suite(BaseModel):
 
 
 def load_suite(path: str | Path) -> Suite:
+    """Read and validate a ``guage.yaml`` suite. Relative paths inside it resolve against the suite's folder.
+
+    Raises ``GuageError`` ``GK-CONFIG-001`` when the file is missing or invalid."""
     p = Path(path)
     if not p.is_file():
         raise GuageError(
@@ -193,6 +202,8 @@ def run_suite(
 def write_configured_reports(
     run: RunResult, reports: Reports, base: Path, comparison: Any = None
 ) -> dict[str, Path]:
+    """Write the reports a suite asks for and return their paths by kind (``html``, ``json``, ``junit``,
+    ``markdown``). Relative paths resolve against ``base``."""
     from guage_kit.reports import junit, markdown, write_report
 
     out: dict[str, Path] = {}

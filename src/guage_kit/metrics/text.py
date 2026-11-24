@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 import re
+import string
 from collections import Counter
 
 from guage_kit.core.sample import Sample
@@ -355,7 +356,7 @@ def bleu(samples: list[Sample], *, max_order: int = 4) -> tuple[float, dict[str,
 # ── chrF ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 def _chr_stats(hyp: str, ref: str, char_order: int, word_order: int) -> list[tuple[int, int, int]]:
     stats: list[tuple[int, int, int]] = []
-    h_chars, r_chars = hyp.replace(" ", ""), ref.replace(" ", "")
+    h_chars, r_chars = "".join(hyp.split()), "".join(ref.split())  # all whitespace, as sacreBLEU
     for n in range(1, char_order + 1):
         h = Counter(h_chars[i : i + n] for i in range(len(h_chars) - n + 1))
         r = Counter(r_chars[i : i + n] for i in range(len(r_chars) - n + 1))
@@ -368,10 +369,13 @@ def _chr_stats(hyp: str, ref: str, char_order: int, word_order: int) -> list[tup
 
 
 def _chrf_words(text: str) -> list[str]:
+    """chrF++ words: split on whitespace, then separate one trailing (or else one leading) ASCII punctuation mark."""
     out: list[str] = []
     for w in text.split():
-        if len(w) > 1 and not w[-1].isalnum():
+        if len(w) > 1 and w[-1] in string.punctuation:
             out.extend([w[:-1], w[-1]])
+        elif len(w) > 1 and w[0] in string.punctuation:
+            out.extend([w[0], w[1:]])
         else:
             out.append(w)
     return out
@@ -417,10 +421,13 @@ REGISTRY.variant("chrf_pp", "chrf", "chrF++: character 6-grams plus word bigrams
 def corpus_chrf(
     samples: list[Sample], *, char_order: int = 6, word_order: int = 0, beta: float = 2.0
 ) -> float:
-    """Corpus chrF: statistics pooled over all samples (first reference)."""
+    """Corpus chrF: statistics pooled over all samples, using each sample's best-matching reference."""
     total: list[tuple[int, int, int]] | None = None
     for s in samples:
-        st = _chr_stats(s.output_text, s.expected_texts[0], char_order, word_order)
+        st = max(
+            (_chr_stats(s.output_text, r, char_order, word_order) for r in s.expected_texts),
+            key=lambda x: _chrf_score(x, beta),
+        )
         total = (
             st
             if total is None

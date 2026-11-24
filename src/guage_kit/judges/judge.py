@@ -60,6 +60,9 @@ class JudgeUsage:
 
 
 class BaseJudge:
+    """The judge interface: ``grade`` a sample on a criterion, ``entailment`` of a hypothesis by a premise, and
+    ``pairwise`` comparison of two outputs. Tracks token usage across calls."""
+
     name = "judge"
 
     def __init__(self) -> None:
@@ -103,6 +106,8 @@ def _block(tag: str, text: str) -> str:
 
 
 def grade_prompt(sample: Sample, criterion: Criterion) -> str:
+    """The grading prompt for a sample and criterion: the rubric, then the question, answer, reference and
+    contexts, each inside a delimited untrusted block."""
     parts = [
         f"Criterion: {criterion.name}",
         f"Rubric (1 is worst, {criterion.scale} is best):",
@@ -156,6 +161,8 @@ PAIR_SCHEMA: dict[str, Any] = {
 
 
 def parse_json(text: str) -> dict[str, Any]:
+    """Read a judge's reply as JSON (whole text, fenced block or first object), falling back to a ``score: N``
+    pattern."""
     from guage_kit.metrics.structured import extract_json
 
     found, value = extract_json(text)
@@ -168,6 +175,12 @@ def parse_json(text: str) -> dict[str, Any]:
 
 
 class LLMJudge(BaseJudge):
+    """A judge backed by a model provider (``anthropic:<model>``, ``openai:<model>``, ``ollama:<model>`` …).
+
+    Prompts put sample text inside untrusted blocks, responses are parsed as JSON, results are cached on disk
+    (``cache_dir``), ``samples > 1`` averages several independent grades (self-consistency), and pairwise
+    comparisons are run in both orders to cancel position bias."""
+
     def __init__(
         self,
         provider: str | Provider,

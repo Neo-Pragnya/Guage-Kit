@@ -122,6 +122,23 @@ PERTURBATIONS: dict[str, Perturbation] = {
 }
 
 
+PERTURBATION_DESCRIPTIONS: dict[str, str] = {
+    "typos": "Introduces typing errors in about 6% of the input's letters: swapped neighbours, dropped letters and "
+    "neighbouring-key substitutions.",
+    "uppercase": "Turns the whole input into capitals.",
+    "lowercase": "Turns the whole input into lower case.",
+    "no_punctuation": "Removes every punctuation character from the input.",
+    "whitespace": "Doubles the spaces between words and adds trailing whitespace or a newline.",
+    "filler": 'Prepends a conversational opener ("Quick question: ", "Hi! I was wondering, " …).',
+    "distractor": 'Appends an irrelevant sentence ("By the way, I like turtles.").',
+    "shuffle_contexts": "Reorders the retrieved contexts (needs at least two): the answer should not depend on order.",
+    "drop_top_context": "Removes the first retrieved context (needs at least two): how much does the answer rely on it?",
+    "noise_context": "Inserts an unrelated passage at a random position among the contexts.",
+}
+"""What each perturbation changes. Text perturbations edit ``input``; context perturbations edit ``contexts``.
+A perturbation that would not change a sample (no text, too few contexts) skips it."""
+
+
 def perturb(
     dataset: Dataset,
     kinds: Sequence[str] = ("typos", "lowercase", "filler", "distractor"),
@@ -206,6 +223,8 @@ def robustness(
 
 # ── red team ─────────────────────────────────────────────────────────────────────────────────────────────────────
 def canary() -> str:
+    """A fresh random canary token (``GK-CANARY-XXXXXXXX``): planted in red-team prompts so a leak is detectable
+    without false positives."""
     return "GK-CANARY-" + secrets.token_hex(4).upper()
 
 
@@ -303,4 +322,11 @@ def redteam_dataset(
     return Dataset(samples, name="redteam")
 
 
-__all__ = ["PERTURBATIONS", "canary", "perturb", "redteam_dataset", "robustness"]
+__all__ = [
+    "PERTURBATIONS",
+    "PERTURBATION_DESCRIPTIONS",
+    "canary",
+    "perturb",
+    "redteam_dataset",
+    "robustness",
+]

@@ -20,10 +20,12 @@ from typing import Any
 
 
 def mean(xs: Sequence[float]) -> float:
+    """Arithmetic mean (NaN for an empty sequence)."""
     return sum(xs) / len(xs) if xs else float("nan")
 
 
 def stdev(xs: Sequence[float]) -> float:
+    """Sample standard deviation (n − 1 denominator); 0 for fewer than two values."""
     if len(xs) < 2:
         return 0.0
     m = mean(xs)
@@ -31,6 +33,7 @@ def stdev(xs: Sequence[float]) -> float:
 
 
 def median(xs: Sequence[float]) -> float:
+    """Median (NaN for an empty sequence)."""
     s = sorted(xs)
     n = len(s)
     if not n:
@@ -39,6 +42,8 @@ def median(xs: Sequence[float]) -> float:
 
 
 def quantile(xs: Sequence[float], q: float) -> float:
+    """Quantile ``q`` in [0, 1] by linear interpolation between order statistics (type 7 in Hyndman and Fan,
+    1996; the default of NumPy and R)."""
     s = sorted(xs)
     if not s:
         return float("nan")
@@ -73,6 +78,7 @@ def bootstrap_ci(
 def histogram(
     values: Sequence[float], bins: int = 10, lo: float | None = None, hi: float | None = None
 ) -> tuple[list[int], tuple[float, float]]:
+    """Counts of values in ``bins`` equal-width bins over [lo, hi] (the data's range by default), and the range used."""
     if not values:
         return [], (0.0, 0.0)
     a = min(values) if lo is None else lo

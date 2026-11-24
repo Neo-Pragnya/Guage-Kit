@@ -43,6 +43,9 @@ class Completion:
 
 @runtime_checkable
 class Provider(Protocol):
+    """The protocol a judge or target provider implements: a ``name`` and ``complete(system, prompt, json_schema=None)``
+    returning a :class:`Completion`."""
+
     name: str
 
     def complete(
@@ -132,6 +135,9 @@ class AnthropicProvider:
 
 # ── OpenAI-compatible (plain HTTP via httpx, which Ananke already depends on) ─────────────────────────────────────
 class OpenAICompatibleProvider:
+    """A provider for any server that speaks the OpenAI-compatible chat completions API
+    (hosted services, vLLM, LM Studio, llama.cpp server …). Uses the standard library only."""
+
     def __init__(
         self,
         model: str,
@@ -193,6 +199,8 @@ class OpenAICompatibleProvider:
 
 # ── Amazon Bedrock (Converse API through boto3) ──────────────────────────────────────────────────────────────────
 class BedrockProvider:
+    """A provider for models on Amazon Bedrock through the Converse API (needs the ``bedrock`` extra)."""
+
     def __init__(self, model: str, *, region: str | None = None, max_tokens: int = 4096) -> None:
         try:
             import boto3

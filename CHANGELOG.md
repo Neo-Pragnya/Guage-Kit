@@ -6,7 +6,34 @@ All notable changes are recorded here. The project follows [semantic versioning]
 
 ## [0.1.1] - 2026-11-24
 
+### Added
+- **Metric cards** for all 90 native metrics (`guage_kit/metrics/cards/`): what each measures, how it is computed
+  (with the formula), its parameters, how to read it, when to use it, pitfalls, a worked example and the papers that
+  define it. Every example is run by the test suite, so the documented numbers are what the metric returns.
+- **Evaluator cards** for all 77 Ananke Plexus evaluators, written from their source: what each reads from the trace,
+  when it passes and what its arguments mean.
+- `guage metrics show <name>` prints the card (`--json` for the declaration plus the card).
+- **Metric reference**: one page per family plus the Ananke evaluators, generated from the cards.
+- **API reference** generated from the code: every public class and function, judge criteria with their anchors,
+  perturbations, statistical methods with their papers, and every CLI option. `make docs-generate` regenerates it;
+  CI fails when it is stale.
+- Website: an animated terminal on the homepage (also in the README), and the release version in the header and the
+  docs sidebar.
+
 ### Fixed
+- chrF ignores all whitespace (newlines and tabs included) and chrF++ separates leading punctuation, as sacreBLEU
+  does; corpus chrF uses each sample's best reference.
+- A line break always ends a sentence, so rougeLsum matches rouge-score on one-sentence-per-line text.
+- Numbers like "1,2,3" are three numbers, not 123 (thousands separators need groups of three).
+- Grouped citations such as `[1, 2]` count for citation coverage and accuracy.
+- Refusal detection handles typographic apostrophes (I’m, can’t).
+- `pii_leakage` compares full values when ignoring personal data echoed from the input (it compared masked values).
+- `cost_usd` skips samples that report only total tokens instead of pricing them at 0.
+- `precision`, `hit_rate` and `mrr` skip samples without relevant ids, like the other ranking metrics;
+  `context_relevance` skips questions without content words instead of scoring 0.
+- `latency_p95@k` rejects a percentile outside 0–100 with a clean error.
+- Declarations: Brier's range is 0–2 (multi-class form); alignment, uniformity and anisotropy declare that they use
+  an embedder; RAG metric references credit the right papers.
 - The README renders fully on PyPI: links are absolute, and the Python-versions badge is static (the dynamic one
   often failed to load). A test keeps it that way.
 - Tests read and write files as UTF-8, so the suite passes on Windows.

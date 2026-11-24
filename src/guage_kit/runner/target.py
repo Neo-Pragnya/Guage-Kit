@@ -24,6 +24,9 @@ _PROVIDER_KINDS = ("anthropic", "openai", "ollama", "openai-compatible", "bedroc
 
 
 class Target:
+    """The system under test: a callable that receives a sample's input (or the whole sample, when its first
+    parameter is named ``sample``) and returns an output. Retries with backoff on exceptions."""
+
     def __init__(
         self,
         fn: Callable[..., Any],
@@ -122,6 +125,8 @@ def _wants_sample(fn: Callable[..., Any]) -> bool:
 
 
 def merge_output(sample: Sample, raw: Any, elapsed_ms: float | None = None) -> Sample:
+    """Merge what a target returned into the sample: a string becomes ``output``; a mapping may also set
+    contexts, retrieved ids, tool calls, usage and other sample fields; a :class:`Sample` replaces it."""
     if isinstance(raw, Sample):
         out = raw
         if out.latency_ms is None and elapsed_ms is not None:

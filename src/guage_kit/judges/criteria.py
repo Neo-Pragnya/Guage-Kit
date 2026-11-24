@@ -13,6 +13,9 @@ from pydantic import BaseModel, Field
 
 
 class Criterion(BaseModel):
+    """A grading criterion: the question a judge answers, what each score level looks like (anchors), the
+    scale, and whether the judge sees the reference answer or the retrieved contexts."""
+
     name: str
     question: str
     levels: dict[int, str] = Field(default_factory=dict)  # score -> what that score looks like
@@ -164,6 +167,8 @@ CRITERIA: dict[str, Criterion] = {
 
 
 def get_criterion(spec: str | dict[str, Any] | Criterion) -> Criterion:
+    """Resolve a criterion from a built-in name (``correctness``, ``groundedness`` …), a mapping
+    (``{name, question, levels}``) or a :class:`Criterion`."""
     if isinstance(spec, Criterion):
         return spec
     if isinstance(spec, dict):

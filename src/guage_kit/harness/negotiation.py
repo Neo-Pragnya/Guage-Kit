@@ -35,6 +35,7 @@ REQUIRED = ("evals.models", "evals.trace", "evals.normalize", "evals.gate", "eva
 
 
 def parse_version(text: str) -> tuple[int, int, int] | None:
+    """Parse the leading ``major.minor.patch`` of a version string; None when it has none."""
     m = re.match(r"^(\d+)\.(\d+)\.(\d+)", text.strip())
     return (int(m.group(1)), int(m.group(2)), int(m.group(3))) if m else None
 
@@ -48,12 +49,14 @@ def _bounds() -> tuple[tuple[int, ...], tuple[int, ...]]:
 
 
 def supported(version: str) -> bool:
+    """True when an Ananke Plexus version falls inside ``SUPPORTED_ANANKE``."""
     parsed = parse_version(version)
     lo, hi = _bounds()
     return parsed is not None and lo <= parsed < hi
 
 
 def installed_version(distribution: str = "ananke-plexus") -> str | None:
+    """The installed version of a distribution (Ananke Plexus by default), or None when it is not installed."""
     try:
         return metadata.version(distribution)
     except metadata.PackageNotFoundError:

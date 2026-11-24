@@ -1,0 +1,315 @@
+# Metric cards for the agent family. Format: guage_kit/metrics/cards.py. Examples are checked by tests/test_metric_cards.py.
+
+tool_call_f1:
+  summary: Whether the agent called the right tools, as an F1 score over tool names that punishes both missing and extra calls.
+  measures: >-
+    Tool selection, ignoring order and arguments. It answers "did the agent use the tools it should have, as many
+    times as it should have, and nothing else?"
+  method: |
+    1. Take the agent's tool calls from `tool_calls`, or, when that list is empty and the sample has a `trace`, from
+       the trace's TOOL spans.
+    2. Count tool **names** on each side as multisets (a tool expected twice must be called twice to get full credit).
+       Arguments and order are ignored.
+    3. The matched count is the multiset intersection: for each name, the smaller of the two counts.
+    4. Precision is matched ÷ calls made, recall is matched ÷ calls expected, and the score is their harmonic mean.
+       An agent that made no calls scores 0.
+  formula: |
+    matched   = Σ_name min(count_actual(name), count_expected(name))
+    precision = matched / Σ count_actual          (0 when the agent made no calls)
+    recall    = matched / Σ count_expected
+    F1        = 2 · precision · recall / (precision + recall)     (0 when both are 0)
+  inputs: "`expected_tool_calls` (required) and `tool_calls` or a `trace` with TOOL spans. Only each call's `name` is read."
+  params: {}
+  interpret: >-
+    0 to 1, higher is better. 1 means the same tools the same number of times. Details list `precision`, `recall`,
+    `missing` (expected but not called) and `unexpected` (called but not expected): low precision means extra or
+    repeated calls, low recall means skipped steps. The run value is the mean over samples.
+  use_when:
+    - A first check of tool selection in function-calling or agent tasks with a known set of correct calls.
+    - Comparing prompt or model versions on whether they pick the right tools at all, before worrying about arguments.
+  pitfalls:
+    - Ignores arguments entirely. Calling `issue_refund` for the wrong order still counts as a match; pair it with `tool_args_accuracy`.
+    - Ignores order. Refunding before looking up the order scores 1; pair it with `tool_sequence_match`.
+    - Names are compared exactly (case-sensitive). Aliased or renamed tools count as wrong.
+    - Many tasks have several valid tool paths. Against a single expected list, a valid alternative path is scored as an error.
+  example:
+    samples:
+      - tool_calls:
+          - {name: lookup_order, arguments: {order_id: "42"}}
+          - {name: lookup_order, arguments: {order_id: "42"}}
+          - {name: issue_refund, arguments: {order_id: "42", reason: damaged}}
+        expected_tool_calls:
+          - {name: lookup_order, arguments: {order_id: "42"}}
+          - {name: issue_refund, arguments: {order_id: "42", reason: damaged}}
+    value: 0.8
+    note: Both expected tools were called (recall 1), but one of three calls was an extra `lookup_order` (precision 2/3), so F1 = 0.8.
+  related: [tool_args_accuracy, tool_sequence_match, tool_calls_exact, ananke.tool_use.tool_selection, ananke.tool_use.tool_allowlist]
+  references:
+    - citation: "Qin, Y., Liang, S., Ye, Y., et al. (2024). ToolLLM: Facilitating Large Language Models to Master 16000+ Real-world APIs. International Conference on Learning Representations (ICLR 2024)."
+      url: https://arxiv.org/abs/2307.16789
+    - citation: "Patil, S. G., Zhang, T., Wang, X., and Gonzalez, J. E. (2023). Gorilla: Large Language Model Connected with Massive APIs. arXiv:2305.15334."
+      url: https://arxiv.org/abs/2305.15334
+
+tool_args_accuracy:
+  summary: For each tool call the agent should have made, the share of its arguments that the agent's matching call got right.
+  measures: >-
+    Argument correctness. It answers "when the agent called the right tool, did it pass the right values?" A call
+    that was never made scores 0 for that expected call.
+  method: |
+    1. Take the agent's calls (from `tool_calls`, or the TOOL spans of the `trace`).
+    2. Walk the expected calls in order. For each one, look at the agent's calls **with the same name that have not
+       already been used** and pick the one whose arguments score highest (the first such call wins ties). Mark it used,
+       so one actual call cannot satisfy two expected calls. The matching is greedy, not a global optimum.
+    3. An expected call's score is the share of its expected argument keys that the actual call has with an equal
+       value. Values are normalised before comparing: strings are lower-cased, trimmed and have runs of whitespace
+       collapsed; floats with no fraction become integers (`42.0` equals `42`); dicts and lists are normalised
+       recursively. Extra arguments on the actual call are ignored. An expected call with no arguments scores 1 if the
+       tool was called.
+    4. If no unused call has the expected name, the expected call scores 0.
+    5. The sample value is the mean over expected calls.
+  formula: |
+    arg_score(actual, expected) = |{k ∈ expected : k ∈ actual and norm(actual[k]) = norm(expected[k])}| / |expected|
+                                  (1 when expected has no arguments)
+    score(e) = max over unused actual calls c with c.name = e.name of arg_score(c.arguments, e.arguments)
+               (0 when there is none)
+    value    = (1 / |E|) Σ_{e ∈ E} score(e)          E = expected_tool_calls
+  inputs: "`expected_tool_calls` (required) and `tool_calls` or a `trace`. Reads each call's `name` and `arguments`."
+  params: {}
+  interpret: >-
+    0 to 1, higher is better. 1 means every expected call was made with every expected argument value. Details list,
+    per expected call, its `score` and whether it was `called` at all, which separates "wrong values" from "tool never
+    called". The run value is the mean over samples.
+  use_when:
+    - Function-calling tasks where the values matter (ids, amounts, dates, search queries).
+    - Diagnosing whether a low `tool_calls_exact` comes from wrong tools or from wrong arguments.
+  pitfalls:
+    - "Types are not coerced: the string `\"42\"` and the integer `42` are different values. If your tools accept both, normalise them in the harness first."
+    - Comparison is exact after normalisation. A free-text argument (`reason`, `query`) that is reworded scores 0 even if it means the same thing.
+    - Extra or hallucinated arguments are not penalised, because only expected keys are checked. Use `ananke.tool_use.tool_schema` to validate arguments against a schema.
+    - Greedy matching in expected order can, in rare cases with several calls to the same tool, pair calls less favourably than the best possible assignment.
+  example:
+    samples:
+      - tool_calls:
+          - {name: lookup_order, arguments: {order_id: "42"}}
+          - {name: issue_refund, arguments: {order_id: "42", reason: wrong size}}
+        expected_tool_calls:
+          - {name: lookup_order, arguments: {order_id: "42"}}
+          - {name: issue_refund, arguments: {order_id: "42", reason: damaged}}
+    value: 0.75
+    note: "`lookup_order` is fully right (1.0); `issue_refund` has the right order id but the wrong reason (0.5). The mean is 0.75."
+  related: [tool_call_f1, tool_calls_exact, ananke.tool_use.tool_schema, ananke.tool_use.idempotency]
+  references:
+    - citation: "Patil, S. G., Zhang, T., Wang, X., and Gonzalez, J. E. (2023). Gorilla: Large Language Model Connected with Massive APIs. arXiv:2305.15334."
+      url: https://arxiv.org/abs/2305.15334
+    - citation: "Schick, T., Dwivedi-Yu, J., Dessì, R., Raileanu, R., Lomeli, M., Zettlemoyer, L., Cancedda, N., and Scialom, T. (2023). Toolformer: Language Models Can Teach Themselves to Use Tools. Advances in Neural Information Processing Systems 36 (NeurIPS 2023)."
+      url: https://arxiv.org/abs/2302.04761
+
+tool_sequence_match:
+  summary: How closely the order of the agent's tool calls follows the expected order, as the longest common subsequence divided by the longer sequence.
+  measures: >-
+    Order-aware trajectory similarity over tool names. It answers "did the agent do the steps in the right order,
+    without skipping or inserting many?"
+  method: |
+    1. Reduce both the actual calls (from `tool_calls`, or the `trace`'s TOOL spans) and the expected calls to lists of
+       tool names. Arguments are ignored.
+    2. Compute the length of the longest common subsequence (LCS): the longest list of names that appears in both, in
+       the same relative order, not necessarily contiguously.
+    3. Divide by the length of the **longer** list, so both missing steps and extra steps lower the score.
+  formula: |
+    value = LCS(actual_names, expected_names) / max(|actual|, |expected|)
+            (1 when both lists are empty)
+  inputs: "`expected_tool_calls` (required) and `tool_calls` or a `trace`. Only call names are read."
+  params: {}
+  interpret: >-
+    0 to 1, higher is better. 1 means the same tools in the same order with nothing extra. Swapping two adjacent
+    steps in a two-step plan gives 0.5; one inserted extra step in an otherwise correct plan of n steps gives
+    n ÷ (n + 1). Details show both sequences. The run value is the mean over samples.
+  use_when:
+    - Workflows where order matters (look up before you refund, authenticate before you query).
+    - Spotting agents that wander: inserted detours lower the score even when every required step happens.
+  pitfalls:
+    - Ignores arguments; pair with `tool_args_accuracy`.
+    - One canonical order is assumed. Steps that may legitimately run in either order are penalised; use `ananke.trajectory.unordered_subset` or `ananke.trajectory.ordered_subset` for looser checks.
+    - Retries count as extra steps, so a resilient agent that retries a failed call scores lower than one that gives up.
+  example:
+    samples:
+      - tool_calls:
+          - {name: lookup_order}
+          - {name: get_weather}
+          - {name: issue_refund}
+        expected_tool_calls:
+          - {name: lookup_order}
+          - {name: issue_refund}
+    value: 0.6667
+    note: The two expected steps happen in order (LCS 2), but an extra `get_weather` call makes the actual sequence 3 long, so 2 ÷ 3.
+  related: [tool_call_f1, tool_calls_exact, ananke.tool_use.tool_order, ananke.trajectory.strict, ananke.trajectory.ordered_subset, ananke.planning.plan_adherence]
+  references:
+    - citation: "Yao, S., Zhao, J., Yu, D., Du, N., Shafran, I., Narasimhan, K., and Cao, Y. (2023). ReAct: Synergizing Reasoning and Acting in Language Models. International Conference on Learning Representations (ICLR 2023)."
+      url: https://arxiv.org/abs/2210.03629
+    - citation: "Qin, Y., Liang, S., Ye, Y., et al. (2024). ToolLLM: Facilitating Large Language Models to Master 16000+ Real-world APIs. International Conference on Learning Representations (ICLR 2024)."
+      url: https://arxiv.org/abs/2307.16789
+
+tool_calls_exact:
+  summary: 1 when the agent made exactly the expected tool calls, in the expected order, with the expected argument values; otherwise 0.
+  measures: >-
+    All-or-nothing trajectory correctness for tasks with a single right sequence of calls. It answers "did the agent
+    do precisely what it should have?"
+  method: |
+    1. Take the actual calls (from `tool_calls`, or the `trace`'s TOOL spans) and the expected calls.
+    2. The lists must have the same length.
+    3. Position by position, the names must be identical and every **expected** argument must be present with an
+       equal value after normalisation (strings lower-cased, trimmed and whitespace-collapsed; `42.0` equals `42`;
+       dicts and lists recursively). This is the same comparison as `tool_args_accuracy`, required to be perfect.
+    4. Arguments the agent passed beyond the expected ones are **not** checked.
+  formula: |
+    exact = 1  if |actual| = |expected| and for every i:
+                  actual[i].name = expected[i].name and
+                  for every key k in expected[i].arguments: norm(actual[i].arguments[k]) = norm(expected[i].arguments[k])
+          = 0  otherwise
+  inputs: "`expected_tool_calls` (required) and `tool_calls` or a `trace`. Reads names and arguments."
+  params: {}
+  interpret: >-
+    0 or 1 per sample; the run value is the share of samples that were exactly right. It is the strictest agent
+    metric, so expect it to sit well below `tool_call_f1` and `tool_sequence_match`. Use it as a gate for deterministic
+    workflows and the graded metrics to see how close the misses were.
+  use_when:
+    - Deterministic workflows with one correct call sequence (form filling, a fixed API recipe).
+    - Regression gates where any change in behaviour should be noticed.
+  pitfalls:
+    - "Lenient in two ways despite its name: string arguments are compared case- and whitespace-insensitively, and extra arguments on the actual call are ignored (`notify: true` added to a refund still passes)."
+    - 'Strict in others. One retry, one harmless extra lookup, or `"42"` versus `42` makes it 0.'
+    - Gives no partial credit, so on small datasets it is noisy; report it alongside `tool_args_accuracy` and `tool_sequence_match`.
+  example:
+    samples:
+      - tool_calls:
+          - {name: lookup_order, arguments: {order_id: " 42 "}}
+          - {name: issue_refund, arguments: {order_id: "42", reason: DAMAGED, notify: true}}
+        expected_tool_calls:
+          - {name: lookup_order, arguments: {order_id: "42"}}
+          - {name: issue_refund, arguments: {order_id: "42", reason: damaged}}
+    value: 1.0
+    note: Padding and case are normalised away, and the extra `notify` argument is not checked, so this counts as exact.
+  related: [tool_args_accuracy, tool_sequence_match, tool_call_f1, ananke.trajectory.strict]
+  references:
+    - citation: "Patil, S. G., Zhang, T., Wang, X., and Gonzalez, J. E. (2023). Gorilla: Large Language Model Connected with Massive APIs. arXiv:2305.15334."
+      url: https://arxiv.org/abs/2305.15334
+    - citation: "Qin, Y., Liang, S., Ye, Y., et al. (2024). ToolLLM: Facilitating Large Language Models to Master 16000+ Real-world APIs. International Conference on Learning Representations (ICLR 2024)."
+      url: https://arxiv.org/abs/2307.16789
+
+tool_error_rate:
+  summary: The share of the agent's tool calls that returned an error. Lower is better.
+  measures: >-
+    How often the agent's tool use fails: malformed arguments, calls the tool rejects, permissions, timeouts. It
+    needs no expected calls, so it works on any recorded agent run.
+  method: |
+    1. Take the agent's calls from `tool_calls`, or from the TOOL spans of the `trace` (where a span's
+       `attributes.error` becomes the call's error).
+    2. A call counts as an error when its `error` field is set to a non-empty value. Nothing else is inspected: a
+       tool that returns an error message inside a successful `output` is not counted.
+    3. Divide by the number of calls. A sample with no calls is skipped, not scored.
+  formula: |
+    tool_error_rate = |{c ∈ calls : c.error is non-empty}| / |calls|
+  inputs: "`tool_calls` (each call's `error`) or a `trace` (TOOL spans' `attributes.error`). `expected_tool_calls` is not needed."
+  params: {}
+  interpret: >-
+    0 to 1, lower is better. 0 means every call succeeded. The run value is the mean of per-sample rates, so a
+    sample with 1 failing call out of 2 weighs as much as one with 10 out of 20. Rising error rate after a prompt or
+    tool-schema change usually means argument formatting broke.
+  use_when:
+    - Monitoring agents in staging or production traces, where no gold trajectory exists.
+    - Checking that a tool description or schema change did not make the model call tools incorrectly.
+  pitfalls:
+    - It only sees errors your harness records in `error`. Errors returned as normal output text are invisible to it.
+    - Some errors are not the agent's fault (an upstream outage). Slice by tool or by time before blaming the model.
+    - A low rate can hide an agent that avoids tools altogether; read it with `tool_call_f1` or `goal_success`.
+  example:
+    samples:
+      - tool_calls:
+          - {name: lookup_order, arguments: {order_id: "42"}, error: timeout}
+          - {name: lookup_order, arguments: {order_id: "42"}}
+          - {name: issue_refund, arguments: {order_id: "42"}}
+          - {name: send_email, arguments: {to: customer}, error: 403 forbidden}
+    value: 0.5
+    note: Two of the four calls carry an error.
+  related: [redundant_tool_calls, goal_success, ananke.resilience.failure_recognition, ananke.resilience.repeated_failure, ananke.tool_use.tool_retry]
+  references:
+    - citation: "Qin, Y., Liang, S., Ye, Y., et al. (2024). ToolLLM: Facilitating Large Language Models to Master 16000+ Real-world APIs. International Conference on Learning Representations (ICLR 2024)."
+      url: https://arxiv.org/abs/2307.16789
+
+redundant_tool_calls:
+  summary: The share of the agent's tool calls that repeat an earlier call with the same tool and the same arguments. Lower is better.
+  measures: >-
+    Wasted or looping tool use. It answers "how much of the agent's work was asking the same thing again?" It needs
+    no expected calls.
+  method: |
+    1. Take the agent's calls from `tool_calls`, or from the TOOL spans of the `trace`.
+    2. Build a key for each call from its name and its arguments serialised as JSON with sorted keys, so argument
+       order does not matter but every value does (no case or whitespace normalisation here).
+    3. Walk the calls in order. A call whose key has been seen before is a repeat; the first occurrence is not.
+    4. Divide the number of repeats by the number of calls. A sample with no calls is skipped.
+  formula: |
+    key(c) = c.name + json(c.arguments, sorted keys)
+    redundant_tool_calls = |{i : key(c_i) = key(c_j) for some j < i}| / |calls|
+  inputs: "`tool_calls` or a `trace`. Reads names and arguments. `expected_tool_calls` is not needed."
+  params: {}
+  interpret: >-
+    0 to 1, lower is better. 0 means no call was repeated verbatim. Three identical calls give 2 repeats out of 3
+    (0.667). Details list the repeated tool names. The run value is the mean over samples.
+  use_when:
+    - Catching agents that loop or forget results they already have.
+    - Cost and latency work, where every repeated call is money and time.
+  pitfalls:
+    - "A retry after a failed call counts as redundant even when retrying was the right move. Read it with `tool_error_rate`, or use `ananke.tool_use.tool_retry` for retry policy."
+    - "Legitimate polling (checking a job status until it finishes) is flagged."
+    - 'Near-duplicates are not caught. `{query: "refund policy"}` and `{query: "Refund policy"}` are different keys.'
+    - It does not know which tools have side effects. Repeating a read is waste; repeating a payment is a bug. Use `ananke.tool_use.duplicate_side_effect` for the latter.
+  example:
+    samples:
+      - tool_calls:
+          - {name: lookup_order, arguments: {order_id: "42"}, error: timeout}
+          - {name: lookup_order, arguments: {order_id: "42"}}
+          - {name: lookup_order, arguments: {order_id: "42"}}
+          - {name: issue_refund, arguments: {order_id: "42"}}
+    value: 0.5
+    note: The second and third `lookup_order` calls repeat the first, so 2 of 4 calls are redundant. The first repeat was a reasonable retry after a timeout; the second was not.
+  related: [tool_error_rate, tool_call_f1, ananke.trajectory.loop_detection, ananke.tool_use.duplicate_side_effect, ananke.tool_use.tool_retry, ananke.efficiency.tool_call_count]
+  references:
+    - citation: "Yao, S., Zhao, J., Yu, D., Du, N., Shafran, I., Narasimhan, K., and Cao, Y. (2023). ReAct: Synergizing Reasoning and Acting in Language Models. International Conference on Learning Representations (ICLR 2023)."
+      url: https://arxiv.org/abs/2210.03629
+
+goal_success:
+  summary: 1 when the task succeeded, as reported by your harness or environment check in `metadata.success`.
+  measures: >-
+    End-to-end task success, judged by the environment rather than by the agent's words or path. It answers "was the
+    refund actually issued, the ticket actually closed, the test actually passing?"
+  method: |
+    1. Read `metadata.success`. Guage Kit does not compute success itself; your harness sets it from a real check of
+       the environment's final state.
+    2. If the key is missing or null, the sample is skipped (not scored as 0).
+    3. Otherwise the value is Python truthiness of the field: `true`, `1` or a non-empty string give 1; `false`, `0`
+       or an empty string give 0.
+  formula: |
+    goal_success = 1 if bool(metadata.success) else 0        (skipped when metadata.success is absent)
+  inputs: "`metadata.success` (boolean). No other field is required."
+  params: {}
+  interpret: >-
+    0 or 1 per sample; the run value is the success rate over samples that report it. It is the metric that matters
+    most to users of an agent, and the one the trajectory metrics should explain: a drop in success with stable
+    `tool_call_f1` points at arguments or outputs rather than tool choice.
+  use_when:
+    - Any agent benchmark with a programmatic success check (environment state, unit tests, database rows).
+    - Gating releases on outcome, with trajectory metrics as diagnostics.
+  pitfalls:
+    - "Truthiness, not parsing: the string `\"false\"` is non-empty and therefore counts as success. Store a real boolean."
+    - It is only as good as your check. A check that reads the agent's claim ("I issued the refund") instead of the system's state measures confidence, not success.
+    - With few samples a success rate is very noisy; use `guage compare` or confidence intervals before concluding one version is better.
+    - It says nothing about how the goal was reached. A successful run may still have called forbidden tools; add `ananke.trajectory.forbidden_step` or `ananke.safety.*` checks.
+  example:
+    samples:
+      - {output: Refund issued for order 42., metadata: {success: true}}
+    value: 1.0
+    note: The environment check confirmed the refund, so the sample succeeds.
+  related: [tool_calls_exact, tool_error_rate, ananke.outcome.task_completion, ananke.outcome.acceptance_criteria, ananke.trajectory.forbidden_step]
+  references:
+    - citation: "Yao, S., Zhao, J., Yu, D., Du, N., Shafran, I., Narasimhan, K., and Cao, Y. (2023). ReAct: Synergizing Reasoning and Acting in Language Models. International Conference on Learning Representations (ICLR 2023)."
+      url: https://arxiv.org/abs/2210.03629

@@ -1,4 +1,4 @@
-"""The generated metric catalogue matches the registry, and every docs page has frontmatter for the site."""
+"""The generated references (metrics, API, terminal SVG) match the code, and every docs page has frontmatter for the site."""
 
 from __future__ import annotations
 
@@ -6,12 +6,15 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).parents[1]
 
 
-def test_metric_catalogue_is_current() -> None:
+@pytest.mark.parametrize("script", ["gen_metric_docs.py", "gen_api_docs.py", "gen_terminal_svg.py"])
+def test_generated_docs_are_current(script: str) -> None:
     r = subprocess.run(
-        [sys.executable, "scripts/gen_metric_docs.py", "--check"],
+        [sys.executable, f"scripts/{script}", "--check"],
         cwd=ROOT,
         capture_output=True,
         text=True,

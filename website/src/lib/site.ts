@@ -110,11 +110,53 @@ export const DOC_NAV: { section: string; items: string[]; shapes: string; tint: 
     "tint": "lilac"
   },
   {
-    "section": "Reference",
+    "section": "Metric reference",
     "items": [
       "reference/metrics",
-      "reference/cli",
+      "reference/metrics/text",
+      "reference/metrics/semantic",
+      "reference/metrics/rag",
+      "reference/metrics/retrieval",
+      "reference/metrics/classification",
+      "reference/metrics/calibration",
+      "reference/metrics/embeddings",
+      "reference/metrics/structured",
+      "reference/metrics/safety",
+      "reference/metrics/agent",
+      "reference/metrics/runtime",
+      "reference/metrics/judge",
+      "reference/metrics/ananke"
+    ],
+    "shapes": "blob>star",
+    "tint": "teal"
+  },
+  {
+    "section": "API reference",
+    "items": [
       "reference/python-api",
+      "reference/api",
+      "reference/api/evaluation",
+      "reference/api/data",
+      "reference/api/metrics",
+      "reference/api/judges",
+      "reference/api/criteria",
+      "reference/api/statistics",
+      "reference/api/statistical-methods",
+      "reference/api/probes-and-synthesis",
+      "reference/api/perturbations",
+      "reference/api/reports",
+      "reference/api/configuration",
+      "reference/api/ananke-harness",
+      "reference/api/errors"
+    ],
+    "shapes": "hex>flower8",
+    "tint": "lemon"
+  },
+  {
+    "section": "Reference",
+    "items": [
+      "reference/cli",
+      "reference/api/cli-options",
       "reference/configuration",
       "reference/report-format",
       "reference/errors",
@@ -153,7 +195,8 @@ export const DOC_TITLES: Record<string, string> = {
   "reference/cli": "CLI reference",
   "reference/configuration": "Configuration (guage.yaml)",
   "reference/errors": "Error codes",
-  "reference/metrics": "Metric catalogue",
+  "reference/metrics": "Metric reference",
+  "reference/api": "API reference",
   "reference/python-api": "Python API",
   "reference/report-format": "Run and report formats"
 };

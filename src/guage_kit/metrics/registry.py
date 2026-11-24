@@ -93,6 +93,9 @@ class MetricContext:
 
 
 class MetricRegistry:
+    """The set of known metrics: built-in families, Ananke Plexus evaluators and plugins registered through the
+    ``guage_kit.metrics`` entry-point group. ``REGISTRY`` is the global instance."""
+
     def __init__(self) -> None:
         self._metrics: dict[str, MetricInfo] = {}
         self._plugins_loaded = False
@@ -215,8 +218,34 @@ def _decorator(level: Level) -> Callable[..., Callable[[Callable[..., Any]], Cal
 
         return inner
 
+    outer.__doc__ = _DECORATOR_DOCS[level]
     return outer
 
+
+_DECORATOR_DOCS: dict[str, str] = {
+    "sample": """Register a function as a sample-level metric.
+
+    The function receives one :class:`Sample` (and ``ctx`` if it declares it) and returns a float, a
+    ``(value, details)`` tuple, a :class:`Score`, or None to skip the sample. Keyword-only parameters with defaults
+    become the metric's configurable ``params``. ``requires`` lists sample fields that must be present (the sample
+    is skipped otherwise); ``requires_any`` needs at least one of them. The first paragraph of the docstring is the
+    description, unless ``description`` is given.
+
+    Example::
+
+        @metric("starts_polite", family="text", requires=("output",))
+        def starts_polite(sample, *, words=("hello", "hi")):
+            \"\"\"1 when the output opens with a greeting.\"\"\"
+            return float(sample.output_text.lower().startswith(tuple(words)))
+    """,
+    "corpus": """Register a function as a corpus-level metric, computed over all usable samples at once.
+
+    The function receives the list of samples that have the required fields and returns a float, a
+    ``(value, details)`` tuple or a ``CorpusOutput``. Use it for statistics that are not averages of per-sample
+    scores (corpus BLEU, F1, ECE, percentiles). Confidence intervals come from resampling the samples. Other
+    arguments are as for :func:`metric`.
+    """,
+}
 
 metric = _decorator("sample")
 corpus_metric = _decorator("corpus")
@@ -375,6 +404,8 @@ def list_metrics(family: str | None = None) -> list[dict[str, Any]]:
 
 
 def get_metric(name: str) -> MetricInfo:
+    """The declaration (:class:`MetricInfo`) of a registered metric. Raises ``GK-METRIC-001`` for unknown names,
+    suggesting the closest match."""
     _ensure_builtins()
     return REGISTRY.get(name)
 

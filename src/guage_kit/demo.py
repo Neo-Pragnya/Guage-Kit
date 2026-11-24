@@ -318,6 +318,8 @@ AGENT_TASKS: list[tuple[str, str, list[ToolCall]]] = [
 
 
 def agent_dataset(seed: int = 11) -> Dataset:
+    """The demo tool-using agent's dataset: support tasks with expected tool calls and recorded calls that
+    sometimes skip a step, use wrong arguments or repeat a call (reproducible for a given ``seed``)."""
     rng = random.Random(seed)
     samples = []
     for aid, task, expected in AGENT_TASKS:
@@ -397,6 +399,8 @@ INTENT_TEXT = {
 
 
 def classifier_dataset(seed: int = 3) -> Dataset:
+    """The demo intent classifier's dataset: labelled messages with predicted labels and class
+    probabilities, including deliberate mistakes and overconfidence (reproducible for a given ``seed``)."""
     rng = random.Random(seed)
     samples = []
     i = 0
@@ -533,6 +537,8 @@ def run_demo(out_dir: str | Path, *, profile: str = "private") -> dict[str, Path
 
 
 def demo_runs() -> dict[str, RunResult]:
+    """Evaluate the two versions of the demo RAG assistant offline and return their runs (``rag_v1``,
+    ``rag_v2``), for comparison examples and tests. ``run_demo`` evaluates all three demo systems and writes reports."""
     from guage_kit.runner.evaluate import evaluate
 
     return {

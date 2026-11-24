@@ -10,6 +10,8 @@ HTML report per run. Built on the [Ananke Plexus](https://github.com/Neo-Pragnya
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/LICENSE)
 [![Docs](https://img.shields.io/badge/docs-website-teal.svg)](https://neo-pragnya.github.io/Guage-Kit/)
 
+<p align="center"><img src="https://neo-pragnya.github.io/Guage-Kit/terminal.svg" alt="guage run and guage compare in a terminal" width="860"></p>
+
 ```bash
 pip install guage-kit
 guage demo            # three systems evaluated offline, reports written to ./guage-demo

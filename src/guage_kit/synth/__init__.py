@@ -74,6 +74,8 @@ def cloze_dataset(
     seed: int = 0,
     name: str = "synthetic-cloze",
 ) -> Dataset:
+    """Offline test questions from document chunks: a salient term is blanked out of a sentence and becomes
+    the expected answer, with the chunk as context and its id as the relevant document."""
     rng = random.Random(seed)
     samples: list[Sample] = []
     for c in chunks:

@@ -5,6 +5,10 @@ description: Measure LLMs, RAG pipelines, retrieval, embeddings, classifiers and
 
 # Guage Kit
 
+[![PyPI](https://img.shields.io/pypi/v/guage-kit?label=PyPI&color=blue)](https://pypi.org/project/guage-kit/)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](https://pypi.org/project/guage-kit/)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/LICENSE)
+
 Guage Kit evaluates AI systems. You give it samples (inputs, the system's outputs, and whatever ground truth you
 have) and it tells you how good the outputs are, how sure you can be about that number, whether a change made things
 better or worse, and whether the result is good enough to ship.

@@ -12,6 +12,8 @@ from typing import Any
 
 
 def weighted_kappa(a: list[int], b: list[int], *, weights: str = "quadratic") -> float | None:
+    """Cohen's weighted kappa between two raters' integer grades (``quadratic`` or ``linear`` weights):
+    agreement beyond chance, where near misses count partly. None when the lists are empty or differ in length."""
     if not a or len(a) != len(b):
         return None
     cats = sorted(set(a) | set(b))

@@ -33,6 +33,8 @@ _EPOCH = datetime(2025, 1, 1, tzinfo=UTC)
 
 
 def to_case(sample: Sample) -> EvalCase:
+    """Convert a sample into an Ananke Plexus ``EvalCase`` (input, expected output, and metadata including
+    relevant document ids)."""
     meta = dict(sample.metadata)
     if sample.relevant_ids and "relevant_docs" not in meta:
         meta["relevant_docs"] = list(sample.relevant_ids)
@@ -45,6 +47,8 @@ def to_case(sample: Sample) -> EvalCase:
 
 
 def to_trace(sample: Sample) -> AgentTrace:
+    """Build an Ananke Plexus ``AgentTrace`` for a sample: its recorded ``trace`` when present (normalised), or
+    a trace assembled from its tool calls, contexts, usage and output."""
     if sample.trace:
         raw = dict(sample.trace)
         raw.setdefault("trace_id", sample.id)
@@ -122,6 +126,7 @@ def tool_calls_from_trace(sample: Sample) -> list[ToolCall]:
 
 # ── results → Ananke ─────────────────────────────────────────────────────────────────────────────────────────────
 def to_policy(rules: list[GateRule]) -> GatePolicy:
+    """Convert gate rules into an Ananke Plexus ``GatePolicy`` (minimum, maximum and on-failure level per metric)."""
     return GatePolicy(
         rules={
             r.metric: GatePolicyRule(minimum=r.min, maximum=r.max, on_failure=r.on_fail)
@@ -131,6 +136,8 @@ def to_policy(rules: list[GateRule]) -> GatePolicy:
 
 
 def to_scores(run: RunResult, rules: list[GateRule] | None = None) -> list[EvalScore]:
+    """Convert a run's metric summaries into Ananke Plexus ``EvalScore`` records, marking each as passed,
+    failed or skipped against its gate rule."""
     by_metric = {r.metric: r for r in rules or []}
     scores: list[EvalScore] = []
     for name, s in run.summaries.items():
@@ -214,6 +221,7 @@ def gate(run: RunResult, rules: list[GateRule]) -> GateResult:
 
 
 def to_report(run: RunResult, rules: list[GateRule] | None = None) -> EvalReport:
+    """Convert a run into an Ananke Plexus ``EvalReport`` (scores plus the gate decision) for evidence bundles."""
     from ananke.plexus.evals.models.report import EvalGateDecision, GateVerdict
 
     scores = to_scores(run, rules)

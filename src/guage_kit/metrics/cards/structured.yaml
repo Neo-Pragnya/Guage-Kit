@@ -1,0 +1,252 @@
+# Metric cards for the structured family. Format: guage_kit/metrics/cards.py. Examples are checked by tests/test_metric_cards.py.
+
+json_valid:
+  summary: 1 when the output contains (or, in strict mode, is) valid JSON, else 0.
+  measures: >-
+    Whether a model asked for JSON produced something a JSON parser accepts. It is the first gate for any
+    structured-output task: nothing downstream works if the JSON does not parse.
+  method: |
+    Default (lenient) mode, tried in order until one succeeds:
+    1. If `output` is already a dict or list (e.g. from a structured-output API), it counts as valid.
+    2. Parse the whole output text, stripped of surrounding whitespace, with Python's standard JSON parser.
+    3. Parse the content of each fenced code block (```` ```json ```` or a bare ```` ``` ````).
+    4. Scan for the first balanced `{...}` object, then the first balanced `[...]` array, respecting quoted strings
+       and escapes, and parse it. If the first balanced span fails to parse the scan moves to the next opener.
+    5. Return 1.0 if any of these parses, else 0.0.
+    Strict mode (`strict: true`): parse the output text exactly as given; any surrounding prose or code fence makes it 0.
+    Parsing follows Python's `json` module, which accepts the non-standard values `NaN`, `Infinity` and `-Infinity`.
+  formula: |
+    lenient: json_valid = 1 if any candidate (whole text, fenced block, first balanced {..} or [..]) parses, else 0
+    strict:  json_valid = 1 if json.loads(output) succeeds, else 0
+  inputs: "`output` (text, or an already-parsed dict or list)."
+  params:
+    strict: When true, the whole output must be JSON with nothing around it (default false). Use it when a program will feed the raw output to a parser.
+  interpret: >-
+    0 or 1 per sample; the run summary is the share of valid outputs. Production pipelines usually need close to
+    1.0. The gap between lenient and strict mode tells you how often the model wraps JSON in prose or fences.
+  use_when:
+    - Any prompt that asks for JSON output, as a cheap first check before `json_schema` or `json_match`.
+    - Comparing prompting strategies or structured-output modes for format compliance.
+  pitfalls:
+    - Lenient mode finds JSON inside prose, so an answer like "I cannot help. {}" passes. Use `strict` or `json_schema` when the shape matters.
+    - Valid JSON can still be the wrong JSON; this says nothing about keys, types or values.
+    - A bare number or string such as `42` or `"ok"` is valid JSON and passes.
+    - "`NaN` and `Infinity` are accepted although RFC 8259 does not allow them."
+  example:
+    samples:
+      - {output: "Sure, here it is:\n```json\n{\"city\": \"Paris\", \"pop\": 2.1}\n```"}
+    value: 1.0
+    note: The JSON is found inside the fenced block. With `strict=true` the same output scores 0.
+  related: [json_schema, json_match, json_field_accuracy, yaml_valid]
+  references:
+    - citation: "Bray, T. (ed.) (2017). The JavaScript Object Notation (JSON) Data Interchange Format. RFC 8259, Internet Engineering Task Force."
+      url: https://www.rfc-editor.org/rfc/rfc8259
+
+yaml_valid:
+  summary: 1 when the output parses as YAML into a mapping or a list, else 0.
+  measures: >-
+    Whether a model asked for YAML (a config file, a manifest, a front-matter block) produced a document a YAML
+    parser accepts and that has structure, rather than a plain string.
+  method: |
+    1. Parse the output text with PyYAML's safe loader (no arbitrary object construction).
+    2. Return 1.0 if parsing succeeds and the top-level value is a mapping or a list; return 0.0 if parsing raises
+       a YAML error or the result is a scalar (a plain string, number, null).
+    Code fences are not stripped: an output wrapped in ```` ```yaml ```` fences fails to parse.
+  formula: |
+    yaml_valid = 1 if safe_load(output) is a mapping or a sequence, else 0
+  inputs: "`output` (text)."
+  params: {}
+  interpret: >-
+    0 or 1 per sample; the run summary is the share of valid outputs. A scalar result means the model returned
+    prose (almost any text is a valid YAML string), which is why scalars count as failures.
+  use_when:
+    - Prompts that ask for YAML configuration or structured data in YAML.
+    - Checking that generated configuration files at least parse before validating their content.
+  pitfalls:
+    - YAML is permissive. Many malformed-looking outputs still parse into some mapping, so passing says little about correctness.
+    - Fenced output fails. Strip fences before scoring, or instruct the model to return bare YAML.
+    - "PyYAML implements YAML 1.1 rules in places, so values like `yes`, `no` and `on` load as booleans, unlike in YAML 1.2."
+    - A multi-document stream (several documents separated by `---`) raises a parse error and scores 0.
+  example:
+    samples:
+      - {output: "name: Ada\nroles: [admin, dev]\n"}
+    value: 1.0
+  related: [json_valid, json_schema]
+  references:
+    - citation: "YAML Language Development Team (2021). YAML Ain't Markup Language (YAML) Version 1.2, revision 1.2.2."
+      url: https://yaml.org/spec/1.2.2/
+
+json_schema:
+  summary: 1 when the JSON in the output conforms to a JSON Schema, else 0, with the validation errors in the details.
+  measures: >-
+    Whether the output has the structure a program expects: the right keys, types, required fields, allowed
+    values and ranges. It is the main check for tool calls, function arguments and extraction into a fixed format.
+  method: |
+    1. Take the schema from the `schema` parameter, or from the sample's `metadata.schema` when the parameter is not
+       set. With no schema the sample is skipped.
+    2. Extract JSON from the output as `json_valid` does in lenient mode (whole text, fenced block, first balanced
+       object or array). If none is found, score 0 with the reason "no JSON found".
+    3. Validate. If the optional `jsonschema` package is installed (`guage-kit[jsonschema]`), the full JSON Schema
+       draft 2020-12 validator is used. Otherwise a built-in validator covers the commonly used keywords: `type`,
+       `properties`, `required`, `additionalProperties`, `items`, `enum`, `const`, `minimum`/`maximum`,
+       `minLength`/`maxLength`, `pattern`, `minItems`/`maxItems`, `anyOf`, `oneOf` and `allOf`. Other keywords
+       (`$ref`, `format`, `exclusiveMinimum`, `prefixItems`, `if`/`then`/`else`, …) are ignored by the built-in one.
+    4. Score 1.0 when there are no errors, else 0.0. Up to 20 errors (with JSON paths) are returned in the
+       details, and the first is used as the score's reason.
+  formula: |
+    json_schema = 1 if JSON is found in the output and validate(json, schema) returns no errors, else 0
+  inputs: "`output` (text or an already-parsed dict/list), and a schema from the `schema` parameter or `metadata.schema`."
+  params:
+    schema: The JSON Schema (as a dict) every output must satisfy. Leave unset to read a per-sample schema from `metadata.schema`, which suits datasets with different target formats.
+  interpret: >-
+    0 or 1 per sample; the run summary is the conformance rate. Read the error details to see which constraint
+    fails most often (a missing required field, a wrong type, an extra property) and fix the prompt or schema.
+  use_when:
+    - Tool calling, function arguments and any extraction task with a fixed output format.
+    - Gating releases on structured-output conformance.
+  pitfalls:
+    - Conformance is not correctness; a valid object can hold the wrong values. Pair with `json_field_accuracy` or `json_match`.
+    - Without the `jsonschema` extra, unsupported keywords are silently ignored, so a schema relying on `$ref` or `format` passes more outputs than it should. Install `guage-kit[jsonschema]` for full validation.
+    - "The built-in validator rejects `3.0` for `type: integer`, although JSON Schema counts it as an integer."
+    - Lenient extraction validates the first JSON found in the output, which may not be the one you meant if the output contains several.
+  example:
+    samples:
+      - {output: "{\"name\": \"Ada\", \"age\": -3}"}
+    params:
+      schema:
+        type: object
+        required: [name, age]
+        properties:
+          name: {type: string}
+          age: {type: integer, minimum: 0}
+        additionalProperties: false
+    value: 0.0
+    note: "Fails with the reason `$.age: -3 < minimum 0` (built-in validator)."
+  related: [json_valid, json_field_accuracy, json_match]
+  references:
+    - citation: "Wright, A., Andrews, H., Hutton, B., and Dennis, G. (2022). JSON Schema: A Media Type for Describing JSON Documents, draft 2020-12. JSON Schema specification."
+      url: https://json-schema.org/draft/2020-12
+    - citation: "Bray, T. (ed.) (2017). The JavaScript Object Notation (JSON) Data Interchange Format. RFC 8259, Internet Engineering Task Force."
+      url: https://www.rfc-editor.org/rfc/rfc8259
+
+json_match:
+  summary: 1 when the JSON in the output is exactly equal to the expected JSON (key order ignored), else 0.
+  measures: >-
+    Whether the model produced exactly the right structured answer: every key, every value, every list element in
+    order. It is the strict, all-or-nothing counterpart of `json_field_accuracy`.
+  method: |
+    1. Read the expected JSON: `expected` if it is already a dict or list, otherwise parse it from the first
+       expected text with the same extraction as `json_valid`. If no expected JSON is found, the sample is skipped.
+    2. Extract JSON from the output (an already-parsed `output` is used as is; otherwise lenient extraction).
+    3. Return 1.0 when the two parsed values are equal, else 0.0. Equality is Python's: object key order does not
+       matter, list order does, strings are compared exactly (case-sensitive), and `1` equals `1.0`.
+  formula: |
+    json_match = 1 if parse(output) == parse(expected), else 0
+  inputs: "`output` (text or dict/list) and `expected` (a dict/list, or text containing JSON)."
+  params: {}
+  interpret: >-
+    0 or 1 per sample; the run summary is the share of exact matches. It is a demanding standard: a single wrong
+    or extra field gives 0, so read it together with `json_field_accuracy` to see how close the misses are.
+  use_when:
+    - The full structured answer must be exactly right, e.g. a parsed command, a routing decision with arguments, a canonical record.
+    - Small, fully determined outputs where partial credit would be misleading.
+  pitfalls:
+    - All-or-nothing. On rich extraction tasks almost every sample scores 0 and the metric stops discriminating; use `json_field_accuracy`.
+    - Case and whitespace in string values matter, unlike in `json_field_accuracy`.
+    - List order matters; sets of tags in a different order do not match.
+    - "Python equality makes `true` equal to `1` and `false` equal to `0`."
+  example:
+    samples:
+      - {output: "{\"b\": [1, 2], \"a\": \"x\"}", expected: {a: x, b: [1, 2]}}
+    value: 1.0
+    note: Key order differs, values are equal.
+  related: [json_field_accuracy, json_schema, json_valid, exact_match]
+  references:
+    - citation: "Bray, T. (ed.) (2017). The JavaScript Object Notation (JSON) Data Interchange Format. RFC 8259, Internet Engineering Task Force."
+      url: https://www.rfc-editor.org/rfc/rfc8259
+
+json_field_accuracy:
+  summary: The F1 over leaf fields between the output JSON and the expected JSON, giving partial credit for structured extraction.
+  measures: >-
+    How many of the expected fields the model extracted correctly, and how many of the fields it produced are
+    correct. It answers "how close is this extracted record to the gold record?" for tasks such as invoice,
+    form or entity extraction.
+  method: |
+    1. Read the expected JSON (`expected` as a dict/list, or parsed from its text) and the output JSON (lenient
+       extraction). With no expected JSON the sample is skipped; with no output JSON it scores 0.
+    2. Flatten both into leaf paths such as `address.city` or `items[0].price`. Objects are walked key by key; lists
+       made only of objects or lists are walked by index; any other list (e.g. a list of strings) is one leaf.
+    3. A field is correct when its path exists in both and the values match:
+       - strings: equal after trimming and lowercasing;
+       - numbers: equal within a relative tolerance of 1e-9;
+       - lists (leaf lists): equal as multisets of their string forms, so order is ignored;
+       - anything else: plain equality.
+    4. precision = correct / number of output leaves, recall = correct / number of expected leaves, and the score is
+       their F1. Precision, recall and up to 20 mismatched fields are returned in the details.
+  formula: |
+    correct   = | { path ∈ leaves(expected) : path ∈ leaves(output) and same(output[path], expected[path]) } |
+    precision = correct / |leaves(output)|
+    recall    = correct / |leaves(expected)|
+    score     = 2 · precision · recall / (precision + recall)          (0 when both are 0)
+  inputs: "`output` (text or dict/list) and `expected` (a dict/list, or text containing JSON)."
+  params: {}
+  interpret: >-
+    0 to 1, higher is better. Recall below precision means fields are missing; precision below recall means the
+    model adds extra fields (or hallucinated ones). The mismatches in the details show which fields fail most.
+  use_when:
+    - Information extraction into JSON, where partial credit is meaningful.
+    - Tracking field-level improvements that `json_match` (all-or-nothing) would hide.
+  pitfalls:
+    - All fields weigh the same; a wrong total amount counts as much as a wrong middle name.
+    - Lists of objects are matched by position, so the same items in a different order score as wrong.
+    - "Lenient value matching: strings ignore case, leaf lists ignore order, and `1` matches `\"1\"` inside lists. Use `json_match` when exact values matter."
+    - Extra fields in the output lower precision even when they are correct but not in the gold record.
+  example:
+    samples:
+      - output: "{\"name\": \"ada lovelace\", \"born\": 1816, \"tags\": [\"poetry\", \"math\"], \"country\": \"UK\"}"
+        expected: {name: Ada Lovelace, born: 1815, tags: [math, poetry]}
+    value: 0.5714
+    note: "name (case ignored) and tags (order ignored) match, born is wrong, country is extra: precision 2/4, recall 2/3."
+  related: [json_match, json_schema, json_valid]
+  references:
+    - citation: "Bray, T. (ed.) (2017). The JavaScript Object Notation (JSON) Data Interchange Format. RFC 8259, Internet Engineering Task Force."
+      url: https://www.rfc-editor.org/rfc/rfc8259
+    - citation: "Sokolova, M., and Lapalme, G. (2009). A systematic analysis of performance measures for classification tasks. Information Processing & Management, 45(4), pp. 427–437."
+      url: https://doi.org/10.1016/j.ipm.2009.03.002
+
+python_syntax:
+  summary: 1 when the output (or its first Python code block) parses as Python source, else 0. Nothing is executed.
+  measures: >-
+    Whether generated code is syntactically valid Python. It is a cheap, safe first check for code generation:
+    code that does not parse cannot pass any test.
+  method: |
+    1. If the output contains fenced code blocks marked ```` ```python ````, ```` ```py ```` or unmarked ```` ``` ````,
+       take the first one; otherwise take the whole output text.
+    2. Parse it with Python's `ast.parse`, using the grammar of the Python version running the evaluation.
+    3. Return 1.0 if it parses, else 0.0 with the line number and message of the syntax error as the reason.
+    The code is only parsed, never compiled to bytecode or run, so the check is safe on untrusted output.
+  formula: |
+    python_syntax = 1 if ast.parse(code) succeeds, else 0
+    code = first ```python / ```py / ``` block of the output, else the whole output
+  inputs: "`output` (text)."
+  params: {}
+  interpret: >-
+    0 or 1 per sample; the run summary is the share of outputs that parse. Strong code models are usually near 1.0
+    on short functions, so failures often point to truncated outputs or prose mixed into the code.
+  use_when:
+    - Code generation tasks, as a gate before running tests.
+    - Detecting truncation (outputs cut off by a token limit usually fail to parse).
+  pitfalls:
+    - Parsing is not correctness. Undefined names, wrong logic and runtime errors all pass; run tests for that.
+    - Only the first code block is checked; later blocks are ignored.
+    - Results depend on the Python version running the evaluation; newer syntax (e.g. `match` statements, new type-parameter syntax) fails on older interpreters.
+    - An answer that is plain prose with no code block is parsed as code and usually fails, which is the intended outcome but worth knowing when reading the reason.
+  example:
+    samples:
+      - {output: "Here is the function:\n```python\ndef add(a, b):\n    return a + b\n```"}
+    value: 1.0
+    note: The prose before the fence is ignored because the first Python block is parsed.
+  related: [json_valid, yaml_valid]
+  references:
+    - citation: "Python Software Foundation. ast — Abstract Syntax Trees. The Python Standard Library documentation."
+      url: https://docs.python.org/3/library/ast.html

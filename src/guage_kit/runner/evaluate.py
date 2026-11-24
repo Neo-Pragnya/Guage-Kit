@@ -167,6 +167,7 @@ def _git(root: Path) -> dict[str, Any]:
 
 
 def environment(root: Path | None = None) -> Environment:
+    """Describe the current environment (versions, platform, git commit and dirty state) for a run record."""
     from guage_kit.harness.negotiation import installed_version
 
     return Environment(
@@ -196,6 +197,8 @@ def summarize(
     n_resamples: int = 1000,
     seed: int = 0,
 ) -> MetricSummary:
+    """Summarise a metric over a run: mean of the sample scores (or the corpus value) with a bootstrap
+    confidence interval, counts of scored, skipped and errored samples, and a histogram."""
     values = [s.value for s in scores if s.value is not None]
     lo_range, hi_range = bm.info.value_range
     s = MetricSummary(

@@ -1,0 +1,393 @@
+---
+title: Embedding models metrics
+description: "Evaluating embedding models themselves: STS correlation, alignment, uniformity, anisotropy."
+---
+
+# Embedding models metrics
+
+> [!NOTE]
+> Generated from the metric registry and the metric cards (`guage_kit/metrics/cards/`). Every example
+> on this page is run by the test suite, so the numbers are what the metric really returns.
+
+Evaluating embedding models themselves: STS correlation, alignment, uniformity, anisotropy.
+
+| metric | in one line |
+| --- | --- |
+| [`alignment`](#alignment) | The mean squared distance between the normalised embeddings of each positive pair (lower means pairs land closer). |
+| [`anisotropy`](#anisotropy) | The mean cosine between embeddings of unrelated items; near 0 is healthy, near 1 means everything looks alike. |
+| [`embedding_cosine`](#embedding_cosine) | The cosine similarity between the two embeddings of a sample's pair of texts or vectors. |
+| [`sts_pearson`](#sts_pearson) | The linear correlation between an embedding model's cosine similarities and human similarity ratings over a set of pairs. |
+| [`sts_spearman`](#sts_spearman) | The rank correlation between an embedding model's cosine similarities and human similarity ratings over a set of pairs. |
+| [`uniformity`](#uniformity) | How evenly the embeddings spread over the unit sphere, as the log of the mean Gaussian potential between vectors (lower is more spread out). |
+
+## alignment
+
+*The mean squared distance between the normalised embeddings of each positive pair (lower means pairs land closer).*
+
+**Level:** corpus · **Range:** 0 to 4, lower is better · **Needs:** `embeddings` or `output`, an embedder · **Deterministic:** yes
+
+**What it measures**
+
+Whether an embedding model maps things that should match (a question and its answer, two paraphrases) to nearby points. It is one half of Wang and Isola's description of a good representation; `uniformity` is the other.
+
+**How it is computed**
+
+1. For each sample, take the pair of vectors: `embeddings.a` and `embeddings.b`, or the embedded `input` and
+   `output` (the run's embedder, or the hashing embedder when none is set).
+2. Scale each vector to unit length.
+3. Compute the squared Euclidean distance between the two unit vectors.
+4. Average over all samples. This is Wang and Isola's alignment loss with exponent alpha = 2. Every sample is
+   treated as a positive pair; `expected` is not read.
+
+```text
+alignment = (1/N) Σ_i ‖ a_i/‖a_i‖ − b_i/‖b_i‖ ‖²  =  (1/N) Σ_i (2 − 2·cos(a_i, b_i))
+```
+
+**Inputs:** `embeddings.a` and `embeddings.b`, or `input` and `output` texts. Every sample must be a positive (matching) pair.
+
+**How to read it**
+
+0 to 4, lower is better. 0 means every pair maps to the same point; 2 corresponds to orthogonal pair vectors (cosine 0); 4 means opposite directions. It is a direct transform of the mean pair cosine, so on its own it adds little beyond `embedding_cosine`; its value is in reading it together with `uniformity`.
+
+**Use it when**
+
+- Diagnosing an embedding model or a fine-tuning run alongside `uniformity`.
+- Comparing contrastive training recipes on the same positive pairs.
+
+**Pitfalls**
+
+- A collapsed model that maps everything to one point has perfect alignment; never read it without `uniformity` or `anisotropy`.
+- Only meaningful when every sample is a true positive pair.
+- Without precomputed vectors the texts are embedded with the run's embedder, or the hashing embedder if none is set.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"embeddings": {"a": [1, 0, 0], "b": [0.9, 0.1, 0]}}
+{"embeddings": {"a": [1, 1, 0], "b": [1, 0, 0]}}
+{"embeddings": {"a": [0, 1, 0], "b": [0.2, 1, 0.3]}}
+{"embeddings": {"a": [0, 0, 1], "b": [1, 0, 0.2]}}
+{"embeddings": {"a": [1, 0, 1], "b": [0, 1, 0]}}
+{"embeddings": {"a": [0, 1, 1], "b": [0, 1, 0.8]}}
+```
+
+Result: **0.7228**
+
+**Related:** [`uniformity`](#uniformity), [`anisotropy`](#anisotropy), [`embedding_cosine`](#embedding_cosine)
+
+**References**
+
+- Wang, T., and Isola, P. (2020). Understanding Contrastive Representation Learning through Alignment and Uniformity on the Hypersphere. Proceedings of the 37th International Conference on Machine Learning (ICML), PMLR 119. <https://arxiv.org/abs/2005.10242>
+
+## anisotropy
+
+*The mean cosine between embeddings of unrelated items; near 0 is healthy, near 1 means everything looks alike.*
+
+**Level:** corpus · **Range:** -1 to 1, lower is better · **Needs:** `embeddings` or `output`, an embedder · **Deterministic:** yes
+
+**What it measures**
+
+Whether an embedding model's vectors all point in roughly the same direction. In an anisotropic space even unrelated texts have high cosine, which compresses the useful range of similarity scores and makes fixed thresholds unreliable.
+
+**How it is computed**
+
+1. For each sample, take the pair of vectors (`embeddings.a`/`b`, or the embedded `input` and `output`).
+2. Form cross-sample pairs: the `a` vector of one sample with the `b` vector of every other sample. A sample's
+   own a/b pair is excluded, since it is meant to be similar. (a–a and b–b pairs are not used.)
+3. If there are more than `max_pairs` such pairs, sample `max_pairs` with a fixed seed (0).
+4. Return the mean cosine over the pairs. Fewer than two samples gives no value.
+This follows Ethayarajh's definition of anisotropy as the expected cosine between randomly chosen
+representations, applied here to sentence-level vectors rather than contextual word vectors.
+
+```text
+anisotropy = mean_{i ≠ j} cos(a_i, b_j)
+```
+
+**Inputs:** `embeddings.a` and `embeddings.b`, or `input` and `output` texts. The samples should be mostly unrelated to each other.
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `max_pairs` | `5000` | Maximum number of cross-sample pairs used (default 5000), sampled with a fixed seed when there are more. |
+
+**How to read it**
+
+−1 to 1, lower (closer to 0) is better. Use it as a baseline for reading cosines: if unrelated pairs average 0.6, a paraphrase cosine of 0.7 is weak evidence of similarity. Mean-centring the vectors or whitening usually reduces it.
+
+**Use it when**
+
+- Choosing a similarity threshold or explaining why cosines from one model are all high.
+- Comparing embedding models or post-processing (centring, whitening) on the same corpus.
+
+**Pitfalls**
+
+- Assumes different samples are unrelated. A dataset of many near-duplicates shows high anisotropy whatever the model.
+- Non-negative embeddings (e.g. sparse count vectors) always have non-negative cosines, so their anisotropy is high by construction.
+- Only a–b cross pairs are used, so if the `a` side and `b` side come from different distributions (queries vs documents) it measures their mutual spread.
+- Without precomputed vectors the texts are embedded with the run's embedder, or the hashing embedder if none is set.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"embeddings": {"a": [1, 0, 0], "b": [0.9, 0.1, 0]}}
+{"embeddings": {"a": [1, 1, 0], "b": [1, 0, 0]}}
+{"embeddings": {"a": [0, 1, 0], "b": [0.2, 1, 0.3]}}
+{"embeddings": {"a": [0, 0, 1], "b": [1, 0, 0.2]}}
+{"embeddings": {"a": [1, 0, 1], "b": [0, 1, 0]}}
+{"embeddings": {"a": [0, 1, 1], "b": [0, 1, 0.8]}}
+```
+
+Result: **0.4435**. Mean cosine over the 30 cross-sample a–b pairs; these small non-negative vectors share directions often.
+
+**Related:** [`uniformity`](#uniformity), [`alignment`](#alignment), [`embedding_cosine`](#embedding_cosine)
+
+**References**
+
+- Ethayarajh, K. (2019). How Contextual are Contextualized Word Representations? Comparing the Geometry of BERT, ELMo, and GPT-2 Embeddings. Proceedings of EMNLP-IJCNLP 2019. <https://arxiv.org/abs/1909.00512>
+- Mu, J., and Viswanath, P. (2018). All-but-the-Top: Simple and Effective Postprocessing for Word Representations. International Conference on Learning Representations (ICLR 2018). <https://arxiv.org/abs/1702.01417>
+
+## embedding_cosine
+
+*The cosine similarity between the two embeddings of a sample's pair of texts or vectors.*
+
+**Level:** sample · **Range:** -1 to 1, higher is better · **Needs:** `embeddings` or `output`, an embedder · **Deterministic:** yes
+
+**What it measures**
+
+How close an embedding model places the two sides of a pair. It answers "does the model think these two texts are similar?" and is the per-pair score that the STS correlations are built from.
+
+**How it is computed**
+
+1. If `embeddings` has both keys `a` and `b`, use those vectors as given.
+2. Otherwise embed `input` and `output` with the run's embedder (the built-in hashing embedder when none is
+   configured).
+3. Return the cosine of the two vectors, a·b / (‖a‖‖b‖). A zero vector gives 0. Vectors of different length are
+   truncated to the shorter one for the dot product, so make sure dimensions match.
+
+```text
+cos(a, b) = Σ_d a_d · b_d / ( sqrt(Σ_d a_d²) · sqrt(Σ_d b_d²) )
+```
+
+**Inputs:** `embeddings.a` and `embeddings.b` (precomputed vectors), or `input` and `output` (two texts, embedded with the configured embedder).
+
+**How to read it**
+
+−1 to 1, higher means more similar. Absolute values are model-specific: many sentence encoders put unrelated sentences at 0.2–0.4 and paraphrases above 0.8, while the hashing embedder measures lexical overlap. Compare values from one model only, and calibrate a threshold on labelled pairs before using it as pass/fail.
+
+**Use it when**
+
+- Inspecting pair by pair which items an embedding model scores high or low.
+- Near-duplicate or paraphrase checks with a threshold tuned on your data.
+
+**Pitfalls**
+
+- Not comparable across embedding models; each has its own similarity distribution (see `anisotropy`).
+- With the default hashing embedder the score reflects shared words and character n-grams, not meaning.
+- Mismatched vector dimensions are not reported as an error.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"embeddings": {"a": [1, 0, 1], "b": [1, 1, 0]}}
+```
+
+Result: **0.5**
+
+**Related:** [`sts_spearman`](#sts_spearman), [`sts_pearson`](#sts_pearson), [`semantic_similarity`](semantic.md#semantic_similarity), [`anisotropy`](#anisotropy)
+
+**References**
+
+- Cer, D., Diab, M., Agirre, E., Lopez-Gazpio, I., and Specia, L. (2017). SemEval-2017 Task 1: Semantic Textual Similarity Multilingual and Crosslingual Focused Evaluation. Proceedings of SemEval-2017, pp. 1–14. <https://arxiv.org/abs/1708.00055>
+
+## sts_pearson
+
+*The linear correlation between an embedding model's cosine similarities and human similarity ratings over a set of pairs.*
+
+**Level:** corpus · **Range:** -1 to 1, higher is better · **Needs:** `expected`, an embedder · **Deterministic:** yes
+
+**What it measures**
+
+Whether the model's cosines rise in a straight-line relationship with the gold similarity ratings. It was the original STS shared-task score; today Spearman is preferred, but Pearson is still reported for comparison.
+
+**How it is computed**
+
+1. For each sample, compute the cosine of the pair as in `embedding_cosine` (`embeddings.a`/`b`, or the
+   embedded `input` and `output`).
+2. Read the gold similarity from `expected` as a number; non-numeric values are skipped.
+3. Return the Pearson correlation between the cosines and the gold scores. Fewer than two pairs, or a constant
+   list, gives no value.
+
+```text
+r = Σ (cos_i − mean(cos)) (gold_i − mean(gold)) / sqrt( Σ (cos_i − mean(cos))² · Σ (gold_i − mean(gold))² )
+```
+
+**Inputs:** `expected` (numeric gold similarity) plus either `embeddings.a`/`embeddings.b` or `input`/`output` texts.
+
+**How to read it**
+
+−1 to 1, higher is better. Values above `sts_spearman` suggest the relationship is close to linear; values well below it suggest the order is right but the cosine scale is compressed or curved (common for anisotropic models).
+
+**Use it when**
+
+- Reporting alongside `sts_spearman` for comparability with older STS results.
+- You plan to map cosines linearly onto the rating scale and want to know if that is reasonable.
+
+**Pitfalls**
+
+- Sensitive to outliers and to non-linear but monotone relationships, which Spearman handles.
+- Models whose cosines are squeezed into a narrow band can be penalised although they rank pairs well.
+- Reimers et al. (2016) show that Pearson can rank systems differently from task performance; prefer Spearman as the headline number.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"embeddings": {"a": [1, 0, 0], "b": [0.9, 0.1, 0]}, "expected": 4.8}
+{"embeddings": {"a": [1, 1, 0], "b": [1, 0, 0]}, "expected": 3.5}
+{"embeddings": {"a": [0, 1, 0], "b": [0.2, 1, 0.3]}, "expected": 4.0}
+{"embeddings": {"a": [0, 0, 1], "b": [1, 0, 0.2]}, "expected": 1.0}
+{"embeddings": {"a": [1, 0, 1], "b": [0, 1, 0]}, "expected": 0.6}
+{"embeddings": {"a": [0, 1, 1], "b": [0, 1, 0.8]}, "expected": 2.0}
+```
+
+Result: **0.8173**. Same as scipy.stats.pearsonr on the cosines and gold scores.
+
+**Related:** [`sts_spearman`](#sts_spearman), [`embedding_cosine`](#embedding_cosine)
+
+**References**
+
+- Cer, D., Diab, M., Agirre, E., Lopez-Gazpio, I., and Specia, L. (2017). SemEval-2017 Task 1: Semantic Textual Similarity Multilingual and Crosslingual Focused Evaluation. Proceedings of SemEval-2017, pp. 1–14. <https://arxiv.org/abs/1708.00055>
+- Reimers, N., Beyer, P., and Gurevych, I. (2016). Task-Oriented Intrinsic Evaluation of Semantic Textual Similarity. Proceedings of COLING 2016, the 26th International Conference on Computational Linguistics: Technical Papers, pp. 87–96. <https://aclanthology.org/C16-1009/>
+
+## sts_spearman
+
+*The rank correlation between an embedding model's cosine similarities and human similarity ratings over a set of pairs.*
+
+**Level:** corpus · **Range:** -1 to 1, higher is better · **Needs:** `expected`, an embedder · **Deterministic:** yes
+
+**What it measures**
+
+How well an embedding model orders pairs by similarity the way people do. It is the standard semantic textual similarity (STS) score: it asks only whether more-similar pairs get higher cosines, not whether the cosines match the rating scale.
+
+**How it is computed**
+
+1. For each sample, get the two vectors as in `embedding_cosine` (`embeddings.a`/`b`, or the embedded `input`
+   and `output`) and compute their cosine.
+2. Read the gold similarity from `expected` as a number (any scale, e.g. 0–5). Samples whose `expected` is not
+   numeric are skipped.
+3. Rank the cosines and the gold scores separately, giving tied values their average rank.
+4. Return the Pearson correlation of the two rank lists, i.e. Spearman's rho with tie correction. Fewer than two
+   pairs, or a constant list, gives no value.
+
+```text
+rho = pearson( rank(cos_1..cos_N), rank(gold_1..gold_N) )
+pearson(x, y) = Σ (x_i − x̄)(y_i − ȳ) / sqrt( Σ (x_i − x̄)² · Σ (y_i − ȳ)² )
+ties receive the mean of the ranks they span
+```
+
+**Inputs:** `expected` (numeric gold similarity) plus either `embeddings.a`/`embeddings.b` or `input`/`output` texts.
+
+**How to read it**
+
+−1 to 1, higher is better. Published STS benchmark results are usually reported as rho × 100; strong sentence encoders reach roughly 0.80–0.90 on the STS benchmark, and lexical baselines are much lower. Differences of a point or two on a few hundred pairs are often within noise; use a confidence interval or `guage compare`.
+
+**Use it when**
+
+- Evaluating or choosing an embedding model for similarity, retrieval or clustering.
+- Gold similarity ratings exist and only their order is trustworthy (the usual case for human ratings).
+
+**Pitfalls**
+
+- Rank-only, so it does not tell you whether a fixed cosine threshold is meaningful.
+- A few hundred pairs give wide confidence intervals; a small STS set rarely separates two good models.
+- Domain matters: a high score on general STS pairs says little about your domain's notion of similarity.
+- Without precomputed vectors the texts are embedded with the run's embedder; if none is set, the hashing embedder is used and you are evaluating it, not your model.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"embeddings": {"a": [1, 0, 0], "b": [0.9, 0.1, 0]}, "expected": 4.8}
+{"embeddings": {"a": [1, 1, 0], "b": [1, 0, 0]}, "expected": 3.5}
+{"embeddings": {"a": [0, 1, 0], "b": [0.2, 1, 0.3]}, "expected": 4.0}
+{"embeddings": {"a": [0, 0, 1], "b": [1, 0, 0.2]}, "expected": 1.0}
+{"embeddings": {"a": [1, 0, 1], "b": [0, 1, 0]}, "expected": 0.6}
+{"embeddings": {"a": [0, 1, 1], "b": [0, 1, 0.8]}, "expected": 2.0}
+```
+
+Result: **0.7537**. Same as scipy.stats.spearmanr on the cosines and gold scores (two cosines tie at 0.994 and share a rank).
+
+**Related:** [`sts_pearson`](#sts_pearson), [`embedding_cosine`](#embedding_cosine), [`alignment`](#alignment), [`uniformity`](#uniformity)
+
+**References**
+
+- Reimers, N., Beyer, P., and Gurevych, I. (2016). Task-Oriented Intrinsic Evaluation of Semantic Textual Similarity. Proceedings of COLING 2016, the 26th International Conference on Computational Linguistics: Technical Papers, pp. 87–96. <https://aclanthology.org/C16-1009/>
+- Cer, D., Diab, M., Agirre, E., Lopez-Gazpio, I., and Specia, L. (2017). SemEval-2017 Task 1: Semantic Textual Similarity Multilingual and Crosslingual Focused Evaluation. Proceedings of SemEval-2017, pp. 1–14. <https://arxiv.org/abs/1708.00055>
+- Spearman, C. (1904). The Proof and Measurement of Association between Two Things. The American Journal of Psychology, 15(1), pp. 72–101. <https://doi.org/10.2307/1412159>
+
+## uniformity
+
+*How evenly the embeddings spread over the unit sphere, as the log of the mean Gaussian potential between vectors (lower is more spread out).*
+
+**Level:** corpus · **Range:** −∞ to 0, lower is better · **Needs:** `embeddings` or `output`, an embedder · **Deterministic:** yes
+
+**What it measures**
+
+Whether an embedding model uses the whole space or crowds its vectors into a small region. Spread-out embeddings keep unrelated items apart, which similarity search and clustering depend on.
+
+**How it is computed**
+
+1. Collect both vectors of every sample (`embeddings.a` and `embeddings.b`, or the embedded `input` and `output`)
+   into one pool and scale each to unit length.
+2. Form every unordered pair of distinct vectors in the pool. If there are more than `max_pairs`, sample
+   `max_pairs` of them with a fixed seed (0), so results are reproducible.
+3. For each pair compute exp(−t · squared distance), average, and take the natural log.
+The pool includes each sample's own a/b pair, a small difference from the paper, which computes uniformity
+over the embedding distribution as a whole.
+
+```text
+uniformity = log( mean_{u ≠ v in pool} exp( −t · ‖u − v‖² ) )        u, v unit vectors
+```
+
+**Inputs:** `embeddings.a` and `embeddings.b`, or `input` and `output` texts. Use a varied set of items: uniformity describes the whole collection.
+
+**Parameters**
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `t` | `2.0` | Temperature of the Gaussian potential (default 2, as in the paper). Larger t focuses on close neighbours; values are only comparable at the same t. |
+| `max_pairs` | `5000` | Maximum number of vector pairs used (default 5000), sampled with a fixed seed when the pool has more pairs. |
+
+**How to read it**
+
+At most 0, lower is better, with a floor of −4t (−8 at the default t = 2) that is never reached in practice. A value near 0 means the vectors are nearly identical (collapse). There is no universal good value: it depends on the model, the items and t, so compare models on the same items at the same t.
+
+**Use it when**
+
+- Diagnosing collapse or crowding in an embedding model, together with `alignment`.
+- Tracking representation quality during contrastive fine-tuning.
+
+**Pitfalls**
+
+- Depends on the set of items; a collection of near-duplicates looks non-uniform whatever the model.
+- Sampling at `max_pairs` adds a little noise for large datasets, though the fixed seed makes it repeatable.
+- Not monotone in downstream quality; a perfectly uniform model with poor alignment is useless.
+- Without precomputed vectors the texts are embedded with the run's embedder, or the hashing embedder if none is set.
+
+**Example** (checked by the test suite against the real metric)
+
+```jsonl
+{"embeddings": {"a": [1, 0, 0], "b": [0.9, 0.1, 0]}}
+{"embeddings": {"a": [1, 1, 0], "b": [1, 0, 0]}}
+{"embeddings": {"a": [0, 1, 0], "b": [0.2, 1, 0.3]}}
+{"embeddings": {"a": [0, 0, 1], "b": [1, 0, 0.2]}}
+{"embeddings": {"a": [1, 0, 1], "b": [0, 1, 0]}}
+{"embeddings": {"a": [0, 1, 1], "b": [0, 1, 0.8]}}
+```
+
+Result: **-1.2884**. 12 vectors in 3 dimensions, so 66 pairs; at the default t = 2.
+
+**Related:** [`alignment`](#alignment), [`anisotropy`](#anisotropy)
+
+**References**
+
+- Wang, T., and Isola, P. (2020). Understanding Contrastive Representation Learning through Alignment and Uniformity on the Hypersphere. Proceedings of the 37th International Conference on Machine Learning (ICML), PMLR 119. <https://arxiv.org/abs/2005.10242>

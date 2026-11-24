@@ -49,7 +49,7 @@ def _claim_table(
     "faithfulness",
     family=_F,
     requires=("output", "contexts"),
-    reference="Es et al. (2023), faithfulness",
+    reference="Es et al. (2024), faithfulness",
 )
 def faithfulness(
     sample: Sample,
@@ -90,7 +90,7 @@ def hallucination_rate(
     "context_recall",
     family=_F,
     requires=("contexts", "expected"),
-    reference="Es et al. (2023), context recall",
+    reference="Es et al. (2024), context recall (adapted)",
 )
 def context_recall(
     sample: Sample,
@@ -124,7 +124,7 @@ def _chunk_relevant(sample: Sample, i: int, chunk: str, threshold: float) -> boo
     "context_precision",
     family=_F,
     requires=("contexts",),
-    reference="Es et al. (2023), context precision",
+    reference="Es et al. (2024), context precision (adapted)",
 )
 def context_precision(
     sample: Sample, *, threshold: float = 0.5
@@ -149,12 +149,14 @@ def context_precision(
 
 
 @metric("context_relevance", family=_F, requires=("input", "contexts"))
-def context_relevance(sample: Sample, *, threshold: float = 0.3) -> tuple[float, dict[str, Any]]:
+def context_relevance(
+    sample: Sample, *, threshold: float = 0.3
+) -> tuple[float, dict[str, Any]] | None:
     """Share of context sentences that relate to the question (noise in the retrieved text)."""
     q = set(T.content_tokens(sample.input_text))
     sents = [s for c in sample.contexts for s in T.sentences(c)]
     if not sents or not q:
-        return 0.0, {}
+        return None  # nothing to measure against: skipped, not scored 0
     rel = 0
     for s in sents:
         st = set(T.content_tokens(s))
@@ -179,7 +181,7 @@ def context_utilization(
     "answer_relevancy",
     family=_F,
     requires=("input", "output"),
-    reference="Es et al. (2023), answer relevancy",
+    reference="Es et al. (2024), answer relevance",
 )
 def answer_relevancy(
     sample: Sample, *, method: str = "auto", ctx: MetricContext | None = None
@@ -209,7 +211,11 @@ def answer_relevancy(
     return min(1.0, score), {"method": "lexical", "coverage": round(coverage, 3)}
 
 
-_CITE = re.compile(r"\[(\d+)\]")
+_CITE = re.compile(r"\[(\d+(?:\s*,\s*\d+)*)\]")  # [1] and grouped [1, 2]
+
+
+def _cited(sentence: str) -> list[int]:
+    return [int(n) for group in _CITE.findall(sentence) for n in group.split(",")]
 
 
 @metric("citation_accuracy", family=_F, requires=("output", "contexts"))
@@ -219,7 +225,7 @@ def citation_accuracy(
     """Share of citations ``[n]`` whose cited context (1-based) supports the sentence that cites it."""
     checks = []
     for sent in T.sentences(sample.output_text):
-        refs = [int(n) for n in _CITE.findall(sent)]
+        refs = _cited(sent)
         claim = _CITE.sub("", sent).strip()
         for n in refs:
             ok = (
@@ -245,7 +251,7 @@ def citation_coverage(sample: Sample) -> float | None:
     "answer_correctness",
     family=_F,
     requires=("output", "expected"),
-    reference="Es et al. (2023), answer correctness",
+    reference="Min et al. (2023), claim-level factual precision (adapted)",
 )
 def answer_correctness(
     sample: Sample, *, threshold: float = 0.6
