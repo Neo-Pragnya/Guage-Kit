@@ -4,6 +4,19 @@ All notable changes are recorded here. The project follows [semantic versioning]
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-24
+
+### Fixed
+- The README renders fully on PyPI: links are absolute, and the Python-versions badge is static (the dynamic one
+  often failed to load). A test keeps it that way.
+- Tests read and write files as UTF-8, so the suite passes on Windows.
+
+### Changed
+- Coverage is measured from interpreter start (`coverage run -m pytest`), because the pytest plugin entry point
+  imports the package before pytest-cov starts. Added tests for the CLI and the built-in JSON Schema validator
+  (160 tests, 87% coverage).
+- First release published by the release pipeline rather than from a workstation.
+
 ## [0.1.0] - 2026-11-24
 
 First public release: a complete rewrite of the earlier prototype, rebuilt on Ananke Plexus.
