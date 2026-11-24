@@ -1,0 +1,106 @@
+/* Guage Kit identity: an instrument panel. Cool paper, ink, deep teal readouts and an amber needle; square-ish
+   corners; a faint engineering grid. Imported after global.css, so only tokens and a few components change. */
+:root {
+  --bg: #f4f6f5;
+  --bg-2: #e9eeec;
+  --surface: #ffffff;
+  --surface-2: #f2f5f4;
+  --ink: #0f1a1f;
+  --muted: #51606a;
+  --line: #dde4e1;
+  --brand: #0f1a1f;
+  --link: #0f6e66;
+  --code-bg: #eef3f1;
+  --teal: #14b8a6;
+  --teal-soft: #d5f3ee;
+  --teal-ink: #0f6e66;
+  --lemon: #f59e0b;
+  --lemon-soft: #fdf0d6;
+  --lemon-ink: #8a5300;
+  --coral: #f2643d;
+  --radius: 12px;
+  --needle: #f59e0b;
+  --readout: #0f6e66;
+}
+:root[data-theme="dark"] {
+  --bg: #0b1114;
+  --bg-2: #0f171b;
+  --surface: #111b20;
+  --surface-2: #16232a;
+  --ink: #e6eeeb;
+  --muted: #9aaab0;
+  --line: #22323a;
+  --link: #5eead4;
+  --code-bg: #0f1a1f;
+  --teal-soft: #0f2e2b;
+  --lemon-soft: #2e2410;
+  --readout: #5eead4;
+}
+body {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--line) 45%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--line) 45%, transparent) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+.hero {
+  background:
+    radial-gradient(120% 120% at 85% 20%, var(--teal-soft), transparent 60%),
+    linear-gradient(160deg, var(--surface), var(--bg-2));
+  border-radius: 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr);
+  align-items: center;
+  gap: 24px;
+}
+.hero h1 .hl {
+  background: linear-gradient(90deg, var(--teal-ink), var(--teal) 55%, var(--needle));
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+@media (max-width: 860px) {
+  .hero { grid-template-columns: 1fr; }
+}
+
+/* brand dial */
+.dial-mark { width: 38px; height: 38px; flex: none; }
+.dial-arc { fill: none; stroke: var(--ink); stroke-width: 4; stroke-linecap: round; }
+.dial-band { fill: none; stroke: var(--teal); stroke-width: 4; stroke-linecap: round; }
+.dial-needle { stroke: var(--needle); stroke-width: 3.5; stroke-linecap: round; transform-origin: 24px 30px; transition: transform 0.6s var(--mk-ease); }
+.dial-hub { fill: var(--ink); }
+.brand:hover .dial-needle { transform: rotate(-70deg); }
+
+/* gauge hero */
+.gauge-hero { margin: 0; position: relative; z-index: 1; }
+.gauge-hero svg { width: 100%; max-width: 420px; display: block; margin: 0 auto; overflow: visible; }
+.g-track { fill: none; stroke: var(--line); stroke-width: 16; stroke-linecap: round; }
+.g-fill { fill: none; stroke: var(--teal); stroke-width: 16; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: g-fill 1.6s var(--mk-ease) 0.2s forwards; }
+.g-band { fill: none; stroke: var(--teal-ink); stroke-width: 5; stroke-linecap: round; opacity: 0; animation: g-in 0.6s ease 1.4s forwards; }
+.g-gate { fill: none; stroke: var(--ink); stroke-width: 22; stroke-linecap: butt; opacity: 0.55; }
+.g-tick { stroke: var(--muted); stroke-width: 1.2; }
+.g-tick.major { stroke: var(--ink); stroke-width: 2; }
+.g-label { fill: var(--muted); font: 600 12px var(--mono); }
+.g-label.gate { fill: var(--ink); }
+.g-needle { transform-origin: 160px 160px; transform: rotate(-90deg); animation: g-needle 1.8s cubic-bezier(0.2, 1.4, 0.4, 1) 0.2s forwards; }
+.g-needle line { stroke: var(--needle); stroke-width: 5; stroke-linecap: round; }
+.g-hub { fill: var(--ink); stroke: var(--needle); stroke-width: 3; }
+.g-value { fill: var(--readout); font: 700 34px var(--display); letter-spacing: -0.02em; }
+.g-caption { fill: var(--muted); font: 500 12px var(--font); }
+@keyframes g-fill { to { stroke-dashoffset: 0; } }
+@keyframes g-in { to { opacity: 0.9; } }
+@keyframes g-needle { to { transform: rotate(var(--to)); } }
+@media (prefers-reduced-motion: reduce) {
+  .g-fill, .g-band, .g-needle { animation: none; }
+  .g-fill { stroke-dashoffset: 0; }
+  .g-band { opacity: 0.9; }
+  .g-needle { transform: rotate(var(--to)); }
+}
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* demo report cards */
+.demo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 28px; }
+.demo-card { text-decoration: none; color: inherit; }
+.demo-card .verdict { display: inline-flex; align-items: center; gap: 6px; font: 600 12px var(--mono); padding: 2px 9px; border-radius: 999px; background: var(--surface-2); }
+.demo-card .verdict i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.v-pass i { background: #0ca30c; } .v-block i { background: #d03b3b; }
+.terminal { background: #0f1a1f; color: #d8e3e0; border-radius: var(--radius); padding: 16px 18px; font: 13px/1.6 var(--mono); overflow-x: auto; margin: 0 0 28px; }
+.terminal .p { color: var(--needle); } .terminal .ok { color: #5eead4; } .terminal .bad { color: #f87171; } .terminal .dim { color: #7b8b91; }

@@ -1,253 +1,107 @@
-# Guage-Kit 🎯
+# Guage Kit
 
-[![PyPI version](https://badge.fury.io/py/guage-kit.svg)](https://badge.fury.io/py/guage-kit)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://opensource.org/licenses/Apache-2.0)
-[![CI](https://github.com/abhikanap/Guage-Kit/workflows/CI/badge.svg)](https://github.com/abhikanap/Guage-Kit/actions)
+**Measure every layer of an AI system: LLM answers, RAG pipelines, retrieval, embeddings, classifiers and agents.
+Deterministic metrics first, LLM judges when you want them, real statistics, quality gates for CI, and one offline
+HTML report per run. Built on the [Ananke Plexus](https://github.com/Neo-Pragnya/Ananke-Plexus) evaluation harness.**
 
-**Guage-Kit** is a comprehensive, extensible evaluation toolkit designed for assessing Large Language Models (LLMs), Retrieval-Augmented Generation (RAG) systems, and embeddings. It provides a unified Python API, command-line interface (CLI), and web UI for seamless integration and evaluation across various AI applications.
+[![PyPI](https://img.shields.io/pypi/v/guage-kit.svg)](https://pypi.org/project/guage-kit/)
+[![Python](https://img.shields.io/pypi/pyversions/guage-kit.svg)](https://pypi.org/project/guage-kit/)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Docs](https://img.shields.io/badge/docs-website-teal.svg)](https://neo-pragnya.github.io/Guage-Kit/)
 
-## 🚀 Key Features
-
-- **🔧 Unified API & CLI**: Consistent interface for all evaluation needs
-- **📊 Comprehensive Metrics**: 7+ built-in metrics covering LLM quality, RAG performance, retrieval effectiveness, and embeddings evaluation
-- **🎛️ Streamlit UI**: Interactive web interface for running and visualizing evaluations
-- **📚 Rich Documentation**: Detailed Sphinx documentation with examples and API reference
-- **⚡ Fast & Scalable**: Optimized for performance with parallel processing support
-- **🔧 Extensible**: Easy to add custom metrics and evaluation workflows
-- **📦 Production Ready**: Robust testing, type checking, and CI/CD pipeline
-
-## 📦 Installation
-
-### Using pip
 ```bash
 pip install guage-kit
+guage demo            # three systems evaluated offline, reports written to ./guage-demo
 ```
 
-### Using uv (recommended)
-```bash
-uv add guage-kit
-```
+## What it does
 
-### Development Installation
-```bash
-git clone https://github.com/abhikanap/Guage-Kit.git
-cd Guage-Kit
-uv sync --all-extras
-```
+| | |
+| --- | --- |
+| **90 metrics, no model needed** | exact/normalised match, token F1, BLEU, chrF/chrF++, ROUGE-1/2/L/Lsum, edit distance; RAG faithfulness, hallucination rate, context precision/recall/relevance/utilisation, citation accuracy, answer correctness; precision/recall/hit@k, MRR, MAP, nDCG (graded); accuracy, macro/micro/weighted F1, kappa, MCC; ECE, MCE, Brier, selective AUROC; STS correlation, alignment, uniformity, anisotropy; JSON/YAML validity, JSON Schema, field accuracy; PII, secrets, prompt-injection, system-prompt leakage, refusals, toxicity, counterfactual consistency; tool-call F1, argument accuracy, sequence match; latency percentiles, tokens, cost |
+| **77 agent evaluators from Ananke** | trajectory, tool use, planning, safety boundaries, resilience, efficiency, multi-agent hand-offs: discovered from the installed harness and run as `ananke.*` metrics |
+| **LLM judges** | 11 anchored criteria or your own rubric; Claude (official SDK), OpenAI-compatible servers, Ollama, Bedrock or any function; on-disk cache, self-consistency, pairwise with order swapping, injection-safe prompts, agreement with human labels |
+| **Statistics** | bootstrap confidence intervals on every number (corpus metrics too); paired bootstrap, permutation and sign tests with Holm correction for comparisons; sample-size planning |
+| **Gates and CI** | `min`/`max`/`max_drop` rules decided by Ananke's policy engine into PASS, WARN, REVIEW or BLOCK; exit codes, JUnit XML, Markdown summaries, Ananke evidence bundles |
+| **Reports** | one self-contained HTML file: overview, metric distributions, slices heatmap, every sample with its explanations, before/after comparison; offline and locked down by its Content Security Policy |
+| **Everything else** | run your own system as a target, `guage.yaml` suites, a pytest plugin, robustness and red-team probes, synthetic test sets from your documents |
 
-### Optional Dependencies
-
-Install with specific extras for additional functionality:
-
-```bash
-# For Streamlit UI
-pip install "guage-kit[ui]"
-
-# For documentation building
-pip install "guage-kit[docs]"
-
-# For development
-pip install "guage-kit[dev]"
-
-# All extras
-pip install "guage-kit[all]"
-```
-
-## 🎯 Quick Start
-
-### Python API
+## Sixty seconds
 
 ```python
-from guage_kit.api import evaluate
-from guage_kit.schemas.core import EvalSample, Query, Generation
+import guage_kit as gk
 
-# Create evaluation sample
-sample = EvalSample(
-    query=Query(
-        id="q1",
-        prompt="What is CRISPR?",
-        references=["CRISPR is a genome editing tool"]
-    ),
-    generation=Generation(
-        query_id="q1",
-        text="CRISPR is a revolutionary genome editing technology",
-        model="gpt-4"
-    )
+def my_rag(question: str) -> dict:          # your system under test
+    docs = retriever.search(question, k=5)
+    return {"output": llm.answer(question, docs), "contexts": [d.text for d in docs], "retrieved_ids": [d.id for d in docs]}
+
+run = gk.evaluate(
+    "support_questions.jsonl",               # question, ground_truth, relevant_ids per line
+    ["token_f1", "faithfulness", "context_recall", "recall@5", "mrr",
+     {"name": "judge", "params": {"criterion": "correctness"}, "as": "judge_correctness"}],
+    target=my_rag,
+    judge="anthropic:claude-opus-5-5",       # or "heuristic" to stay offline
+    gates=[{"metric": "faithfulness", "min": 0.85}, {"metric": "recall@5", "min": 0.8, "on_fail": "warn"}],
+    slices=["tags"],
 )
-
-# Run evaluation
-results = evaluate(
-    data=[sample],
-    metrics=["rougeL", "bleu"],
-    config={}
-)
-
-print(results)
-# Output: {'rougeL': 0.85, 'bleu': 0.72}
+print(run.gate.verdict, run.value("faithfulness"), run.summaries["faithfulness"].ci_low)
+gk.report(run, "report.html")
 ```
 
-### Command Line Interface
+Or from the command line:
 
 ```bash
-# Basic evaluation
-guage-kit run --data eval_data.jsonl --metrics rougeL bleu
-
-# Advanced evaluation with configuration
-guage-kit run \
-    --data data/rag_eval.jsonl \
-    --metrics rougeL bleu recall_at_k mrr ndcg answer_relevancy \
-    --config config.yaml \
-    --output results.json
+guage init                                   # guage.yaml + a sample dataset
+guage run                                    # evaluate, gate, write reports (exit 1 when the gate blocks)
+guage baseline set                           # remember this run
+guage run && guage compare baseline:main latest -o compare.html
 ```
 
-### Streamlit Web UI
+In pytest:
+
+```python
+def test_answers_are_grounded(guage):
+    run = guage.evaluate("tests/data/qa.jsonl", ["faithfulness", "recall@5"], target=my_rag)
+    guage.check(run, faithfulness=0.85, recall__at__5=0.8)
+```
+
+## Install
 
 ```bash
-# Launch interactive web interface
-uv run streamlit run apps/guage_kit_ui/Home.py
+pip install guage-kit                        # core: offline metrics, reports, CLI, pytest plugin
+pip install "guage-kit[anthropic]"           # Claude judges and targets (official SDK)
+pip install "guage-kit[embeddings]"          # sentence-transformers for semantic metrics
+pip install "guage-kit[all]"                 # anthropic, embeddings, jsonschema, bedrock
 ```
 
-## 📊 Supported Metrics
+Python 3.11–3.14. Every runtime dependency is permissively licensed (Apache-2.0, MIT, BSD, ISC, PSF; certifi is
+MPL-2.0); `make licenses` checks it. See [licensing](docs/concepts/licensing.md).
 
-### LLM Quality Metrics
-- **ROUGE-L**: Longest Common Subsequence-based evaluation
-- **BLEU**: Bilingual Evaluation Understudy score
+## Documentation
 
-### RAG Quality Metrics  
-- **Answer Relevancy**: Semantic similarity between query and response
-- **Faithfulness**: Consistency between context and generated answer
+The full documentation is on the [website](https://neo-pragnya.github.io/Guage-Kit/) and in [docs/](docs/index.md):
+[getting started](docs/guides/getting-started.md) · [datasets](docs/guides/datasets.md) ·
+[targets](docs/guides/targets.md) · [metrics](docs/guides/metrics.md) · [RAG](docs/guides/rag.md) ·
+[agents](docs/guides/agents.md) · [judges](docs/guides/judges.md) · [statistics](docs/guides/statistics.md) ·
+[gates and CI](docs/guides/gates-and-ci.md) · [reports](docs/guides/reports.md) · [pytest](docs/guides/pytest.md) ·
+[safety and red teaming](docs/guides/safety-and-red-teaming.md) · [CLI](docs/reference/cli.md) ·
+[metric catalogue](docs/reference/metrics.md) · [configuration](docs/reference/configuration.md).
 
-### Information Retrieval Metrics
-- **Recall@k**: Top-k retrieval accuracy
-- **MRR**: Mean Reciprocal Rank
-- **nDCG@k**: Normalized Discounted Cumulative Gain
+## How it relates to Ananke Plexus
 
-### Embeddings Metrics
-- **STS Spearman**: Semantic Textual Similarity correlation
+Ananke Plexus owns the canonical evaluation model (cases, agent traces, scores), its agent evaluators, the gate
+policy engine and evidence bundles. Guage Kit builds the evaluation product on top: the metric library, judges,
+statistics, the runner, reports, CLI and pytest plugin. Results convert both ways, so a Guage Kit run can be filed as
+Ananke evidence and gated by the same policy as the rest of an Ananke-governed project. See
+[architecture](docs/concepts/architecture.md).
 
-## 📋 Data Format
-
-Guage-Kit expects data in a structured format with clear separation of queries, context, and generations:
-
-```json
-{
-  "query": {
-    "id": "q1",
-    "prompt": "What is machine learning?",
-    "references": ["Machine learning is a subset of AI..."]
-  },
-  "retrieval": {
-    "query_id": "q1",
-    "chunks": [
-      {
-        "id": "c1",
-        "text": "Machine learning involves algorithms...",
-        "source": "textbook",
-        "relevance_score": 0.95
-      }
-    ]
-  },
-  "generation": {
-    "query_id": "q1",
-    "text": "Machine learning is a powerful AI technique...",
-    "model": "gpt-4",
-    "metadata": {}
-  }
-}
-```
-
-## 🛠️ Configuration
-
-Create a `config.yaml` file to customize evaluation settings:
-
-```yaml
-metrics:
-  rougeL:
-    use_stemmer: true
-  bleu:
-    max_order: 4
-  recall_at_k:
-    k: [1, 5, 10]
-  ndcg:
-    k: 10
-
-output:
-  format: "json"
-  include_details: true
-```
-
-## 📚 Documentation
-
-- **API Reference**: [docs/api/](docs/api/)
-- **User Guides**: [docs/guides/](docs/guides/)
-- **Metrics Reference**: [docs/references/metrics.rst](docs/references/metrics.rst)
-
-Build documentation locally:
-```bash
-uv run sphinx-build docs docs/_build
-```
-
-## 🧪 Testing
-
-Run the test suite:
+## Development
 
 ```bash
-# Run all tests
-uv run pytest
-
-# Run with coverage
-uv run pytest --cov=guage_kit
-
-# Run specific test file
-uv run pytest tests/test_basic.py -v
+make install      # uv sync with dev tools
+make verify       # ruff, format check, mypy --strict, pytest, licence check, generated docs check
+make acceptance   # 47 capability scenarios driving the real CLI; the release gate
+make scan         # build and scan the wheel and sdist the way package firewalls do
 ```
 
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Development Setup
-
-```bash
-git clone https://github.com/abhikanap/Guage-Kit.git
-cd Guage-Kit
-uv sync --all-extras
-uv run pre-commit install
-```
-
-### Code Quality
-
-We maintain high code quality standards:
-- **Type Checking**: mypy
-- **Linting**: ruff
-- **Formatting**: black, isort
-- **Testing**: pytest with coverage
-
-## 📈 Roadmap
-
-- [ ] Additional metrics (METEOR, BERTScore, Semantic Similarity)
-- [ ] Integration with popular frameworks (LangChain, LlamaIndex)
-- [ ] Advanced reporting and visualization
-- [ ] Distributed evaluation support
-- [ ] Custom metric development toolkit
-
-## 📄 License
-
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Thanks to all contributors and the open-source community
-- Built with modern Python tools: UV, Pydantic, Streamlit, Sphinx
-- Inspired by the need for standardized AI evaluation practices
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/abhikanap/Guage-Kit/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/abhikanap/Guage-Kit/discussions)
-- **Documentation**: [Project Documentation](docs/index.md)
-
----
-
-**Made with ❤️ for the AI evaluation community**
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md). Licensed under [Apache-2.0](LICENSE).

@@ -1,0 +1,20 @@
+name: support-bot
+dataset: data/support.jsonl
+target: support_bot:answer
+judge: heuristic
+metrics:
+  - contains
+  - token_f1
+  - faithfulness
+  - context_recall
+  - recall@3
+  - mrr
+  - {name: judge, params: {criterion: correctness}, as: judge_correctness}
+slices: [tags]
+gates:
+  - {metric: recall@3, min: 0.6}
+  - {metric: faithfulness, min: 0.6, on_fail: warn}
+reports:
+  html: reports/report.html
+  junit: reports/junit.xml
+  markdown: reports/summary.md

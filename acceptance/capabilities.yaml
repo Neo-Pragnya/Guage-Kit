@@ -1,0 +1,51 @@
+# What Guage Kit must be able to do before a release, and how much of the CLI the scenarios exercise.
+# Scenarios prove capabilities by tagging themselves @cap_<id> (dots and dashes become underscores).
+# blocker: true → a failing or unproven capability BLOCKs the release; the rest hold it at CONDITIONAL.
+product: Guage Kit
+default_fixture: support-bot
+binaries: [guage]
+surface_target: 0.6
+
+capabilities:
+  - { id: packaging, title: "Installs cleanly: entry points, version, fast start", dimension: release, blocker: true }
+  - { id: quickstart, title: "init → run → report works in an empty folder, offline", dimension: core, blocker: true }
+  - { id: evaluate, title: "Evaluates a dataset file with explicit or automatic metrics", dimension: core, blocker: true }
+  - { id: target, title: "Runs the user's own system (module:function) to produce outputs", dimension: core, blocker: true }
+  - { id: gates, title: "Quality gates decide PASS/WARN/REVIEW/BLOCK and set the exit code", dimension: core, blocker: true }
+  - { id: reports, title: "Writes the offline HTML report, Markdown summary, JUnit XML and run.json", dimension: core, blocker: true }
+  - { id: report-safety, title: "Hostile text in data or outputs stays inert in reports", dimension: safety, blocker: true }
+  - { id: compare, title: "Baselines and paired comparisons detect regressions", dimension: core, blocker: true }
+  - { id: ananke, title: "Ananke evaluators, policy gate and evidence bundles work through Guage Kit", dimension: integration, blocker: true }
+  - { id: datasets, title: "Validate, describe, convert, split and sample datasets; bad data fails with a code", dimension: core, blocker: true }
+  - { id: secrets, title: "Credentials are never printed or written into reports", dimension: safety, blocker: true }
+  - { id: cli-ux, title: "Errors are clean: stable codes, no tracebacks, no success marks on failure", dimension: usability, blocker: true }
+  - { id: catalogue, title: "The metric catalogue can be browsed", dimension: usability, blocker: false }
+  - { id: judges, title: "Offline judge and judge calibration", dimension: core, blocker: false }
+  - { id: probes, title: "Red-team and robustness probes", dimension: safety, blocker: false }
+  - { id: synth, title: "Synthetic test sets from documents", dimension: core, blocker: false }
+  - { id: demo, title: "The offline demo produces its reports", dimension: usability, blocker: false }
+
+# Every user-facing command (discovered from --help; prune what is internal).
+surface:
+  - guage baseline set
+  - guage baseline show
+  - guage compare
+  - guage data convert
+  - guage data sample
+  - guage data split
+  - guage data stats
+  - guage data validate
+  - guage demo
+  - guage doctor
+  - guage init
+  - guage judge calibrate
+  - guage metrics list
+  - guage metrics show
+  - guage probe perturb
+  - guage probe redteam
+  - guage probe robustness
+  - guage report
+  - guage run
+  - guage runs
+  - guage synth
+  - guage version

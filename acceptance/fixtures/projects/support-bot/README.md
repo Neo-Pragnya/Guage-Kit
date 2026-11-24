@@ -1,0 +1,1 @@
+# support-bot (acceptance fixture)\n\nA small help-centre bot with a keyword retriever, its test set and a guage.yaml suite. Acceptance scenarios evaluate it with Guage Kit.\n

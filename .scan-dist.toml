@@ -1,0 +1,24 @@
+# Every accepted finding below is an exception: it has an owner, a reason and a date by which someone must look at it
+# again. scripts/scan_dist.py blocks a release when a review date has passed, and lists any due within 30 days.
+[review]
+owner = "Neo-Pragnya maintainers"
+review_by = "2027-02-24"
+
+# Findings a person has reviewed, read by scripts/scan_dist.py at every release. Each needs a reason. A rule accepted
+# with `paths` is accepted only there: the same rule matching anywhere else blocks the release.
+
+[heuristics.capability-filesystem-read]
+reason = "RunResult.load reads a run.json the user names (a saved evaluation run); nothing else is read from disk there"
+paths = ["guage_kit/core/results.py", "src/guage_kit/core/results.py"]
+
+[heuristics.capability-network-outbound]
+reason = "a false match on Path.resolve() of the dataset path the user passes to `guage run --data`; the CLI makes no network call (model providers call out only when a user configures one)"
+paths = ["guage_kit/cli.py", "src/guage_kit/cli.py"]
+
+[heuristics.capability-process-spawn]
+reason = "records the git revision of the evaluated project: a fixed argv ['git', '-C', <root>, 'rev-parse', 'HEAD'] and 'status --porcelain', no shell, 5-10 s timeout"
+paths = ["guage_kit/runner/evaluate.py", "src/guage_kit/runner/evaluate.py"]
+
+[[licence]]
+package = "certifi"
+reason = "Mozilla's CA bundle, MPL-2.0, pulled in by httpx through Ananke Plexus; file-level copyleft on certifi's own files, used unmodified"

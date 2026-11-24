@@ -1,55 +1,41 @@
-# CHANGELOG
+# Changelog
+
+All notable changes are recorded here. The project follows [semantic versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [0.1.0] - YYYY-MM-DD
+## [0.1.0] - 2026-11-24
+
+First public release: a complete rewrite of the earlier prototype, rebuilt on Ananke Plexus.
+
 ### Added
-- Initial project structure and files as per project plan.
-- Implemented `evaluate()` function in `src/guage_kit/api.py`.
-- Created CLI for running evaluations in `src/guage_kit/cli.py`.
-- Defined data models in `src/guage_kit/schemas/core.py`.
-- Added metrics for LLM quality: ROUGE-L, BLEU, METEOR in `src/guage_kit/metrics/llm_quality.py`.
-- Implemented RAG quality metrics including faithfulness and answer relevancy in `src/guage_kit/metrics/rag_quality.py`.
-- Developed information retrieval metrics in `src/guage_kit/metrics/retrieval_ir.py`.
-- Created embeddings evaluation metrics in `src/guage_kit/metrics/embeddings.py`.
-- Added hallucination detection metrics in `src/guage_kit/metrics/hallucination.py`.
-- Implemented safety and bias metrics in `src/guage_kit/metrics/safety_bias.py`.
-- Developed model calibration metrics in `src/guage_kit/metrics/calibration.py`.
-- Created runtime cost metrics in `src/guage_kit/metrics/runtime_cost.py`.
-- Added adapters for RAGAS, TruLens, and PromptFoo.
-- Developed Streamlit UI with pages for running evaluations, exploring results, and comparing runs.
-- Created documentation using Sphinx with Wagtail theme.
-- Added unit tests for core functionalities in the `tests` directory.
-- Configured CI/CD with GitHub Actions for linting, testing, and documentation building.
+- **Evaluation engine** (`guage_kit.evaluate`): datasets from JSON Lines, JSON, YAML, CSV or TSV with field aliases;
+  optional target (your function, `module:function` or a model) with concurrency, retries and repeats
+  (`self_consistency`); automatic metric selection from the fields present; bootstrap confidence intervals for
+  sample and corpus metrics; slices by tag or metadata; reproducible run files with dataset fingerprints, versions
+  and git revision.
+- **90 native metrics** across text, semantic similarity, RAG, retrieval, classification, calibration, embeddings,
+  structured output, safety, agents, runtime and judges. BLEU, chrF and ROUGE match sacreBLEU and rouge-score;
+  retrieval and classification metrics match scikit-learn (tested).
+- **77 Ananke Plexus evaluators** discovered from the installed harness and exposed as `ananke.*` metrics, with
+  arguments resolved from parameters, `metadata.ananke` or expected tool calls.
+- **Judges**: 11 anchored criteria and custom rubrics; Claude through the official SDK (structured verdicts,
+  server-side refusal fallbacks), OpenAI-compatible servers, Ollama, Amazon Bedrock and any function; on-disk cache,
+  self-consistency, pairwise comparison with order swapping, an offline heuristic judge, and agreement statistics
+  against human labels.
+- **Comparisons**: paired bootstrap intervals, permutation and sign tests, Holm correction, effect sizes, sample
+  regressions; pairwise judging of two runs; named baselines and `max_drop` regression gates.
+- **Gates** decided by Ananke's policy engine (PASS / WARN / REVIEW / BLOCK), exit codes and `--fail-on`;
+  Ananke evidence bundles.
+- **Reports**: an offline single-file HTML report (overview, metrics, slices heatmap, samples with explanations,
+  comparison forest plot) with a hash-locked Content Security Policy and a public profile; Markdown, JUnit XML, JSON.
+- **CLI** `guage`: init, run, report, compare, runs, baseline, metrics, data, judge calibrate, probe, synth, demo,
+  doctor, version.
+- **pytest plugin** with the `guage` fixture, `--guage-report` and `--guage-junit`.
+- **Probes**: perturbation robustness and a red-team set (direct and indirect prompt injection with canaries, system
+  prompt and personal-data extraction, over-refusal).
+- **Synthetic data**: chunking, offline cloze questions, model-generated grounded questions.
+- Documentation site, acceptance suite and release gate, distribution scan, licence check.
 
-### Changed
-- Initial versioning set to 0.1.0 following Semantic Versioning guidelines. 
-
-### Fixed
-- N/A
-
-## [0.1.0] - YYYY-MM-DD
-### Added
-- Initial project structure and files as per project plan.
-- Implemented `evaluate()` function in `src/guage_kit/api.py`.
-- Created CLI for running evaluations in `src/guage_kit/cli.py`.
-- Defined data models in `src/guage_kit/schemas/core.py`.
-- Added metrics for LLM quality: ROUGE-L, BLEU, METEOR in `src/guage_kit/metrics/llm_quality.py`.
-- Implemented RAG quality metrics including faithfulness and answer relevancy in `src/guage_kit/metrics/rag_quality.py`.
-- Developed information retrieval metrics in `src/guage_kit/metrics/retrieval_ir.py`.
-- Created embeddings evaluation metrics in `src/guage_kit/metrics/embeddings.py`.
-- Added hallucination detection metrics in `src/guage_kit/metrics/hallucination.py`.
-- Implemented safety and bias metrics in `src/guage_kit/metrics/safety_bias.py`.
-- Developed model calibration metrics in `src/guage_kit/metrics/calibration.py`.
-- Created runtime cost metrics in `src/guage_kit/metrics/runtime_cost.py`.
-- Added adapters for RAGAS, TruLens, and PromptFoo.
-- Developed Streamlit UI with pages for running evaluations, exploring results, and comparing runs.
-- Created documentation using Sphinx with Wagtail theme.
-- Added unit tests for core functionalities in the `tests` directory.
-- Configured CI/CD with GitHub Actions for linting, testing, and documentation building.
-
-### Changed
-- Initial versioning set to 0.1.0 following Semantic Versioning guidelines. 
-
-### Fixed
-- N/A
+### Removed
+- The Streamlit interface, the old adapters and notebooks of the prototype. HTML reports replace the interface.

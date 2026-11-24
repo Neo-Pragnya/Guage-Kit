@@ -1,40 +1,156 @@
 [build-system]
-requires = ["hatchling>=1.25"]
+requires = ["hatchling>=1.26"]
 build-backend = "hatchling.build"
-
-[tool.hatch.version]
-path = "src/guage_kit/__init__.py"
 
 [project]
 name = "guage-kit"
 dynamic = ["version"]
-description = "A unified, extensible toolkit for evaluating LLMs, RAG systems, and embeddings."
+description = "Guage Kit: measure LLMs, RAG pipelines, retrieval, embeddings, classifiers and agents. Deterministic metrics, LLM judges, statistics, quality gates, a pytest plugin and offline HTML reports, built on the Ananke Plexus evaluation harness."
 readme = "README.md"
-license = {text = "Apache-2.0"}
-requires-python = ">=3.9"
-authors = [{ name = "Neo Pragnya", email = "opensource@neo-pragnya.org" }]
-classifiers = [
-  "Programming Language :: Python :: 3",
-  "License :: OSI Approved :: Apache Software License",
-  "Topic :: Scientific/Engineering :: Artificial Intelligence"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Neo Pragnya" }]
+keywords = [
+  "llm-evaluation",
+  "rag-evaluation",
+  "agent-evaluation",
+  "llm-as-a-judge",
+  "retrieval",
+  "embeddings",
+  "metrics",
+  "quality-gates",
+  "pytest",
+  "ananke",
 ]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: Apache Software License",
+  "Environment :: Console",
+  "Framework :: Pytest",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Software Development :: Testing",
+  "Typing :: Typed",
+]
+# Guage Kit is a client of Ananke Plexus: Ananke owns the canonical eval models, agent-trace evaluators, gate
+# decisions and evidence bundles (docs/concepts/architecture.md). Keep this range in step with SUPPORTED_ANANKE in
+# src/guage_kit/harness/negotiation.py (tests/test_packaging.py checks it).
+# Every runtime dependency is permissively licensed (scripts/check_licenses.py enforces it).
 dependencies = [
-  "pydantic>=2.6",
-  "numpy>=1.24",
-  "pandas>=2.0",
-  "sacrebleu>=2.4",
-  "rouge-score>=0.1.2",
-  "scikit-learn>=1.3",
-  "pyyaml>=6.0"
+  "ananke-plexus>=0.3.45,<0.4",
+  "pydantic>=2.11,<3",
+  "PyYAML>=6,<7",
+  "rich>=13",
+  "typer>=0.16,<1",
 ]
 
 [project.optional-dependencies]
-neural = ["transformers>=4.41", "torch>=2.2", "bert-score>=0.3.13", "sentence-transformers>=3.0"]
-judge  = ["openai>=1.40", "boto3>=1.34"]
-reports = ["jinja2>=3.1", "plotly>=5.22"]
-ui = ["streamlit>=1.28,<1.50"]
-docs   = ["sphinx>=7.2", "myst-parser>=3.0", "sphinx-autodoc-typehints>=2.2", "sphinx-rtd-theme>=1.3"]
-dev    = ["pytest>=8.2", "pytest-cov>=5.0", "mypy>=1.11", "ruff>=0.6.9", "black>=24.8.0", "isort>=5.13", "tox>=4.15", "pip-audit>=2.7", "bandit>=1.7"] 
+# Neural similarity (embedding cosine, BERTScore-style matching). Apache-2.0.
+embeddings = ["sentence-transformers>=3"]
+# Full JSON Schema validation (the built-in validator covers the common subset). MIT.
+jsonschema = ["jsonschema>=4.23"]
+# Claude judges and targets through the official Anthropic SDK. Apache-2.0.
+anthropic = ["anthropic>=2"]
+# Amazon Bedrock judges and targets. Apache-2.0.
+bedrock = ["boto3>=1.34"]
+all = ["guage-kit[anthropic,embeddings,jsonschema,bedrock]"]
+dev = [
+  "hatchling>=1.26",
+  "mypy>=1.15",
+  "pytest>=8",
+  "pytest-bdd>=9.0.1",
+  "pytest-cov>=6",
+  "pytest-xdist>=3",
+  "ruff>=0.12",
+  "types-pyyaml>=6",
+  # reference implementations, used only as test oracles (all permissive: Apache-2.0 / BSD-3-Clause)
+  "sacrebleu>=2.4",
+  "rouge-score>=0.1.2",
+  "scikit-learn>=1.5",
+  "scipy>=1.13",
+]
 
 [project.scripts]
+guage = "guage_kit.cli:main"
 guage-kit = "guage_kit.cli:main"
+
+[project.entry-points.pytest11]
+guage_kit = "guage_kit.pytest_plugin"
+
+[project.urls]
+Homepage = "https://neo-pragnya.github.io/Guage-Kit/"
+Documentation = "https://neo-pragnya.github.io/Guage-Kit/docs/"
+Repository = "https://github.com/Neo-Pragnya/Guage-Kit"
+Issues = "https://github.com/Neo-Pragnya/Guage-Kit/issues"
+Changelog = "https://github.com/Neo-Pragnya/Guage-Kit/blob/main/CHANGELOG.md"
+
+[tool.hatch.version]
+path = "src/guage_kit/version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/guage_kit"]  # includes reports/assets and the demo datasets
+# 2.4 is the newest metadata most SCA parsers read; 2.5 made firewalls see an unknown component
+core-metadata-version = "2.4"
+
+[tool.hatch.build.targets.sdist]
+core-metadata-version = "2.4"
+# Anchored: an unanchored "src" also matches website/node_modules/*/src.
+include = ["/src", "/README.md", "/LICENSE", "/CHANGELOG.md"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["website", "acceptance/harness.py", "scripts/scan_dist.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "S", "UP", "SIM", "RUF"]
+ignore = ["B008", "E501", "RUF001", "RUF002", "RUF003"]  # B008: Typer defaults; E501: ruff format owns line length; RUF00x: typographic dashes and signs in prose are deliberate
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "S603", "S607", "S311", "S108", "S314"]
+"acceptance/**/*.py" = ["S101", "S603", "S607", "S108"]
+# S311: seeded random.Random drives bootstrap resampling and perturbations, never crypto
+"src/guage_kit/stats/*.py" = ["S311"]
+"src/guage_kit/probes/*.py" = ["S311"]
+"src/guage_kit/core/dataset.py" = ["S311"]
+"src/guage_kit/synth/*.py" = ["S311"]
+"src/guage_kit/metrics/embeddings.py" = ["S311"]
+"src/guage_kit/runner/compare.py" = ["S311"]
+# S603/S607: the git revision is read with a fixed argv (no shell, no input), like any developer tool
+"src/guage_kit/runner/evaluate.py" = ["S311", "S603", "S607"]
+"src/guage_kit/demo.py" = ["S311"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+files = ["src/guage_kit"]
+
+[[tool.mypy.overrides]]
+module = ["ananke.*"]
+follow_untyped_imports = true
+
+[[tool.mypy.overrides]]
+module = ["anthropic", "anthropic.*", "sentence_transformers", "sentence_transformers.*", "jsonschema", "jsonschema.*", "boto3", "boto3.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.coverage.run]
+source = ["src/guage_kit"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true

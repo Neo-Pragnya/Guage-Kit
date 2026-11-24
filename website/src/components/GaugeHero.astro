@@ -1,0 +1,44 @@
+---
+// The landing visual: a gauge reading 0.87 with its 95% confidence band, the needle sweeping in, tick marks and a
+// live readout. Everything is inline SVG; motion honours prefers-reduced-motion.
+const ticks = Array.from({ length: 21 }, (_, i) => i / 20);
+const R = 120;
+const cx = 160;
+const cy = 160;
+const angle = (v: number) => Math.PI * (1 - v); // 0 → left, 1 → right
+const pt = (v: number, r: number) => [cx + r * Math.cos(angle(v)), cy - r * Math.sin(angle(v))];
+const arc = (a: number, b: number, r: number) => {
+  const [x1, y1] = pt(a, r);
+  const [x2, y2] = pt(b, r);
+  return `M${x1.toFixed(1)} ${y1.toFixed(1)} A${r} ${r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}`;
+};
+const value = 0.87;
+const lo = 0.82;
+const hi = 0.91;
+---
+
+<figure class="gauge-hero" aria-label="A gauge reading faithfulness 0.87, 95% confidence interval 0.82 to 0.91">
+  <svg viewBox="0 0 320 210" role="img">
+    <path class="g-track" d={arc(0, 1, R)} />
+    <path class="g-fill" d={arc(0, value, R)} pathLength="1" />
+    <path class="g-band" d={arc(lo, hi, R + 16)} />
+    <path class="g-gate" d={arc(0.8, 0.8001, R + 4)} />
+    {
+      ticks.map((t) => {
+        const major = Math.round(t * 20) % 5 === 0;
+        const [x1, y1] = pt(t, R - 12);
+        const [x2, y2] = pt(t, major ? R - 26 : R - 19);
+        return <line class:list={["g-tick", { major }]} x1={x1} y1={y1} x2={x2} y2={y2} />;
+      })
+    }
+    <text class="g-label" x={pt(0, R)[0] - 2} y={cy + 22} text-anchor="middle">0</text>
+    <text class="g-label" x={pt(1, R)[0] + 2} y={cy + 22} text-anchor="middle">1</text>
+    <text class="g-label gate" x={pt(0.8, R + 30)[0]} y={pt(0.8, R + 30)[1]} text-anchor="middle">gate 0.80</text>
+    <g class="g-needle" style={`--to: ${(value * 180 - 90).toFixed(1)}deg`}>
+      <line x1={cx} y1={cy} x2={cx} y2={cy - (R - 26)} />
+    </g>
+    <circle class="g-hub" cx={cx} cy={cy} r="9" />
+    <text class="g-value" x={cx} y={cy + 46} text-anchor="middle">0.87</text>
+    <text class="g-caption" x={cx} y={cy + 66} text-anchor="middle">faithfulness · 95% CI 0.82 – 0.91 · PASS</text>
+  </svg>
+</figure>

@@ -1,11 +1,6 @@
-# Guage-Kit — CODEOWNERS
-
-* @neo-pragnya
-* @your-github-username
-* @another-contributor-username
-
-# Specify the owners for specific paths
-/src/guage_kit/ @neo-pragnya
-/apps/guage_kit_ui/ @your-github-username
-/docs/ @another-contributor-username
-/tests/ @neo-pragnya, @your-github-username
+# The release gate's reviewed exceptions, the gate itself and the workflows that run it need the owner's review.
+/.scan-dist.toml @abhikanap
+/scripts/scan_dist.py @abhikanap
+/scripts/check_licenses.py @abhikanap
+/.github/workflows/ @abhikanap
+/.github/CODEOWNERS @abhikanap
