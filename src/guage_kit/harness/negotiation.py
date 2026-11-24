@@ -66,9 +66,8 @@ def probe(capabilities: dict[str, tuple[str, str]] = CAPABILITIES) -> dict[str, 
     for cap, (module, attr_path) in capabilities.items():
         try:
             # module names come from the fixed CAPABILITIES table above, never from input
-            obj: object = importlib.import_module(
-                module
-            )  # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
+            # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
+            obj: object = importlib.import_module(module)
             for part in attr_path.split("."):
                 obj = getattr(obj, part)
             found[cap] = True

@@ -260,9 +260,8 @@ def import_object(path: str) -> Any:
         raise GuageError("GK-TARGET-001", f"cannot import {path!r}", hint="use module:function")
     try:
         # the user names their own code in their own configuration
-        obj: Any = importlib.import_module(
-            module
-        )  # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
+        # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
+        obj: Any = importlib.import_module(module)
         for part in attr.split("."):
             obj = getattr(obj, part)
     except (ImportError, AttributeError) as exc:
