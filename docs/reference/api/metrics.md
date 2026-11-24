@@ -293,7 +293,7 @@ REQUIRED_FIELDS = ('summary', 'measures', 'method', 'inputs', 'interpret', 'pitf
 get_card(name: str) -> dict[str, Any] | None
 ```
 
-[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/cards.py#L98)
+[source](https://github.com/Neo-Pragnya/Guage-Kit/blob/main/src/guage_kit/metrics/cards.py#L99)
 
 The card for one metric (native or Ananke evaluator), or None (plugin metrics have none).
 
